@@ -1,0 +1,437 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb", "mathtools"]
+    dev: cairo_pdf
+    latex_engine: xelatex
+mainfont: "Courier"
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+```
+
+### 4.iii) Usando un generador de números aleatorios, generar 200 datos $\{x_i\}_{i=1}^{200}$, $X_i \sim \text{Pareto}$ con $\theta = 1.2$
+
+```{r}
+set.seed(1)
+n <- 200
+theta <- 1.2
+x <- EnvStats::rpareto(n,
+                       location = 1,
+                       shape = theta)
+```
+```{r, echo=FALSE, warning=F}
+library(ggplot2)
+
+pdf_pareto <- function(x) theta*x^(-theta-1)
+
+ggplot(data.frame(x), aes(x=x)) +
+  geom_histogram(
+    aes(
+      y=after_stat(density)
+      ),
+    binwidth=1,
+    colour="black",
+    fill="white",
+    size = .5) +
+  geom_density(alpha=.4,
+               fill="blue",
+               linewidth = 0) +
+  # geom_function(fun = pdf_pareto,
+  #               col = "red") +
+  ggthemes::theme_fivethirtyeight() +
+  ggtitle("Histograma y densidad empírica",
+          subtitle = "Ancho de banda = 1") +
+  scale_x_continuous(
+    limits = c(1, NA),       # Restrict x-axis to start at 1
+    breaks = c(1, seq(5, max(x), 5)) # Show labels from 1 onward, spaced by 1
+  )
+```
+
+
+---
+
+\newpage
+
+### 4.iv) Con los datos $\{x_i\}_{i=1}^{200}$ obtenidos en iii), dar un intervalo de confianza (95%) de $\theta + \ln(\theta)$
+
+Primero, notemos que
+$$
+\begin{aligned}
+&g: \mathbb{R} \xrightarrow{} \mathbb{R} \ , \\
+&\theta + \ln(\theta) = g(\theta) \implies \dfrac{\partial g(\theta)}{\partial \theta} = 1 + \dfrac{1}{\theta}
+\end{aligned}
+$$
+Además, recordando el resultado del primer inciso, y utilizando el principio de invarianza, obtenemos
+$$
+\begin{aligned}
+&f: \mathbb{R} \xrightarrow{} \mathbb{R} \ , \\
+&V = \theta^2 = f(\theta) \implies \hat{V_n} = f(\hat{\theta}_{\small{MV}}) = \hat{\theta}_{\small{MV}}^2 \ \ ,\ \ \text{donde } \ \hat{\theta}_{\small{MV}} = \dfrac{n}{\sum_{i=1}^n \ln(X_i)}
+\end{aligned}
+$$
+Una vez planteado lo anterior, para calcular el intervalo de confianza de $g(\theta)$ conviene emplear el siguiente pivote:
+$$
+\sqrt{n} \Bigg(\dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}}'\Bigg)^{-1/2} \Big(g(\hat{\theta}_{\small{MV}}) - g(\theta)\Big) \xrightarrow{\enskip D\enskip} N(0,1)
+$$
+Desarrollando el pivote:
+$$
+\begin{aligned}
+\sqrt{n} \Bigg(\dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}}'\Bigg)^{-1/2} \Big(g(\hat{\theta}_{\small{MV}}) - g(\theta)\Big) 
+&= 
+\sqrt{n} \Big(g'(\hat{\theta}_{\small{MV}})^2 (\hat{\theta}_{\small{MV}})^2\Big)^{-1/2} \Big(g(\hat{\theta}_{\small{MV}}) - g(\theta)\Big) \\
+&= \sqrt{n} \Big(g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}\Big)^{-1} \Big(g(\hat{\theta}_{\small{MV}}) - g(\theta)\Big) \\
+&= \sqrt{n} \dfrac{g(\hat{\theta}_{\small{MV}}) - g(\theta)} {g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}} \xrightarrow{\enskip D\enskip} N(0,1)
+\end{aligned}
+$$
+Con esto podemos construir el intervalo de confianza. Sean $q_1$ y $q_2$ dos cuantiles de la normal estándar tal que $q_1 < q_2$. Entonces:
+$$
+\begin{aligned}
+  &\mathbb{P}\Bigg[
+    q_1 < 
+      \sqrt{n} \dfrac{g(\hat{\theta}_{\small{MV}}) - g(\theta)} {g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}
+    < q_2
+  \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[
+    q_1\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}} < 
+      g(\hat{\theta}_{\small{MV}}) - g(\theta)
+    < q_2\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}}
+  \Bigg] = 0.95 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    - g(\hat{\theta}_{\small{MV}}) + q_1\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}} < 
+      - g(\theta)
+    < - g(\hat{\theta}_{\small{MV}}) + q_2\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}}
+  \Bigg] = 0.95 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    g(\hat{\theta}_{\small{MV}}) - q_1\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}} > 
+      g(\theta)
+    > g(\hat{\theta}_{\small{MV}}) - q_2\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}}
+  \Bigg] = 0.95 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    g(\hat{\theta}_{\small{MV}}) - q_2\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}} < 
+      g(\theta)
+    < g(\hat{\theta}_{\small{MV}}) - q_1\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}}
+  \Bigg] = 0.95
+\end{aligned}
+$$
+El intervalo de confianza para $g(\theta) = \theta + \ln(\theta)$ es entonces:
+$$
+\begin{aligned}
+IC_{g(\theta)} 
+&= \Bigg(
+  g(\hat{\theta}_{\small{MV}}) - q_{97.5\%}^{N(0,1)}\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}} \ , \
+  g(\hat{\theta}_{\small{MV}}) - q_{2.5\%}^{N(0,1)}\dfrac{g'(\hat{\theta}_{\small{MV}})\hat{\theta}_{\small{MV}}}{\sqrt{n}}
+\Bigg) \\
+&= \Bigg(
+  \hat{\theta}_{\small{MV}} + \ln(\hat{\theta}_{\small{MV}}) - q_{97.5\%}^{N(0,1)}\dfrac{\hat{\theta}_{\small{MV}} + 1}{\sqrt{n}} \ , \
+  \hat{\theta}_{\small{MV}} + \ln(\hat{\theta}_{\small{MV}}) - q_{2.5\%}^{N(0,1)}\dfrac{\hat{\theta}_{\small{MV}} + 1}{\sqrt{n}}
+\Bigg) \ , \\
+\text{donde } \ \hat{\theta}_{\small{MV}} = \dfrac{n}{\sum_{i=1}^n \ln(X_i)}
+\end{aligned}
+$$
+Usando los datos generados en iii), computemos el intervalo. Primero, observemos que dado el valor verdadero de $\theta$, $g(\theta)$ sería:
+```{r}
+g_theta <- theta + log(theta)
+g_theta
+```
+Es decir, $g(\theta)\Bigr|_{\theta=1.2} = `r g_theta`$. Tengamos esto en cuenta, pues el intervalo de confianza debería contener este valor dentro de su rango. Calculemos entonces este intervalo:
+```{r}
+theta_mv <- n / sum(log(x)) # Estimado de máxima verosimilitud
+g_theta_mv <- theta_mv + log(theta_mv) # g(theta_mv)
+
+alpha <- 0.05 # significancia. confianza = 1 - alpha
+q1 <- qnorm(alpha/2) # cuantil 2.5%
+q2 <- qnorm(1 - alpha/2) # cuantil 97.5%
+
+# Intervalo
+IC <- c(
+  g_theta_mv - q2 * (theta_mv + 1) / sqrt(n),
+  g_theta_mv - q1 * (theta_mv + 1) / sqrt(n)
+)
+IC
+```
+Esto es, el intervalo de confianza de $\theta + \ln (\theta)$ al 95% de confianza es:
+$$
+IC_{g(\theta)} = \Big( `r IC[1]` \ , \  `r IC[2]`  \Big)
+$$
+El cual contiene al valor verdadero de $g(\theta)$.
+
+---
+
+\newpage
+
+### 4.v) Con los datos $\{x_i\}_{i=1}^{200}$ obtenidos en iii), usando el estadístico de Wald probar la hipótesis $$ \begin{aligned} &\mathbf{H_0}: \theta + \ln (\theta) = 1.3 \ \ \ \text{vs} \\ &\mathbf{H_1}: \theta + \ln (\theta) \neq 1.3 \end{aligned} $$ con nivel de significancia del 5%
+
+Bajo $\mathbf{H}_0$ el estadístico de Wald es
+$$
+\mathbf{W}_n = 
+\Big(\sqrt{n} \ \ (g(\hat{\theta}_{\small{MV}}) - 1.3 ) \Big)^2 (\dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}})^{-1}  \xrightarrow{\enskip D\enskip} \chi_1^2
+$$
+Desarrollando:
+$$
+\begin{aligned}
+\mathbf{W}_n 
+  &= 
+    \Big(\sqrt{n} \ \ (g(\hat{\theta}_{\small{MV}}) - 1.3 ) \Big)^2 (\dfrac{\partial g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial
+    g(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}})^{-1} \\
+  &= 
+    \Big(\sqrt{n} \ \ (\hat{\theta}_{\small{MV}} + \ln(\hat{\theta}_{\small{MV}}) - 1.3 ) \Big)^2 (g'(\hat{\theta}_{\small{MV}})^2 (\hat{\theta}_{\small{MV}})^2)^{-1} \\
+  &= 
+    \dfrac{n \ \ (\hat{\theta}_{\small{MV}} + \ln(\hat{\theta}_{\small{MV}}) - 1.3 ) ^2}{(g'(\hat{\theta}_{\small{MV}})(\hat{\theta}_{\small{MV}}))^2} \\
+  &= 
+    \dfrac{n \ \ (\hat{\theta}_{\small{MV}} + \ln(\hat{\theta}_{\small{MV}}) - 1.3 ) ^2}{(\hat{\theta}_{\small{MV}} + 1)^2} \\
+&\iff \mathbf{W}_n = n \Bigg(\dfrac{\hat{\theta}_{\small{MV}} + \ln(\hat{\theta}_{\small{MV}}) - 1.3}{\hat{\theta}_{\small{MV}} + 1}\Bigg)^2\xrightarrow{\enskip D\enskip} \chi_1^2
+\end{aligned}
+$$
+Con esto podemos computar el estadístico
+```{r}
+wald_n <- n * ((g_theta_mv - 1.3) / (theta_mv + 1))^2
+wald_n
+```
+Es decir, $\mathbf{W}_n = `r wald_n`$. El valor crítico al 5% de significancia, $\Sigma_{5\%}$ sería
+```{r}
+alpha <- 0.05
+q <- qchisq(alpha, df = 1, lower.tail = F)
+q
+```
+Observemos que
+$$
+\mathbf{W}_n = `r wald_n` < `r q` = \Sigma_{5\%}
+$$
+Por lo tanto, aceptamos la hipótesis nula. Esto era de esperarse, dado que el valor 1.3 está dentro del intervalo de confianza con el mismo nivel de confianza.
+
+---
+
+---
+
+\newpage
+
+### 5.iii) Usando un generador de números aleatorios, generar 200 datos $\{x_i\}_{i=1}^{200}$, $X_i \sim N(\mu, \sigma^2)$. con $\mu = 0.4$ y $\sigma^2 = 0.64$
+
+```{r}
+rm(list = ls())
+set.seed(3)
+n <- 200
+mu <- 0.4
+sigma2 <- 0.64
+x <- rnorm(n = 200, mean = mu, sd = sqrt(sigma2))
+```
+```{r, echo=FALSE, warning=F}
+library(ggplot2)
+
+pdf_pareto <- function(x) theta*x^(-theta-1)
+
+ggplot(data.frame(x), aes(x=x)) +
+  geom_histogram(
+    aes(
+      y=after_stat(density)
+      ),
+    binwidth=.5,
+    colour="black",
+    fill="white",
+    size = .5) +
+  geom_density(alpha=.3,
+               fill="blue",
+               linewidth = 0) +
+  geom_function(fun = dnorm,
+                args = list(mean = mu, sd = sqrt(sigma2)),
+                col = "red",
+                linewidth = 1) +
+  ggthemes::theme_fivethirtyeight() +
+  ggtitle("Histograma, densidad empírica (azul) y verdadera (rojo)",
+          subtitle = "Ancho de banda = 0.5") +
+  theme(plot.title = element_text(size = 15, face = "bold"))
+```
+
+
+---
+
+\newpage
+
+### 5.iv) Con los datos $\{x_i\}_{i=1}^{200}$ obtenidos en iii), dar un intervalo de confianza (95%) de $\mu^2 + e^{\sigma^2}$
+
+Dado que $\mu^2 + e^{\sigma^2} = h(\theta)$, $h: \mathbb{R}^2 \rightarrow \mathbb{R}$, 
+
+Primero, notemos que
+$$
+\begin{aligned}
+&h: \mathbb{R} \times \mathbb{R}^+ \rightarrow \mathbb{R} \ , \\
+&\mu^2 + e^{\sigma^2} = h(\theta) \implies \dfrac{\partial h(\theta)}{\partial \theta} = 
+  \begin{pmatrix}  
+    \dfrac{\partial h(\theta)}{\partial \mu} & \dfrac{\partial h(\theta)}{\partial \sigma^2} 
+  \end{pmatrix}
+  =
+  \begin{pmatrix}  
+    2\mu & e^{\sigma^2} 
+  \end{pmatrix}
+\end{aligned}
+$$
+Además, recordando el resultado del primer inciso, y utilizando el principio de invarianza, obtenemos
+$$
+\begin{aligned}
+&j: \mathbb{R} \times \mathbb{R}^+ \xrightarrow{} \mathbb{R}^4 \ , \\
+&V = \begin{pmatrix} \sigma^2 & 0 \\ 0 & 2\sigma^4 \end{pmatrix} = j(\theta) 
+\implies 
+\hat{V_n} = j(\hat{\theta}_{\small{MV}}) = \begin{pmatrix} \hat{\sigma}_{\small{MV}}^2 & 0 \\ 0 & 2\hat{\sigma}_{\small{MV}}^4 \end{pmatrix} \ \ ,\ \ \\
+&\text{donde, por el inciso ii) sabemos que } \ \hat{\sigma}_{\small{MV}}^2 = \dfrac{1}{n}\sum_{i=1}^n (X_i - \bar{X}_n)^2
+\end{aligned}
+$$
+Una vez planteado lo anterior, para calcular el intervalo de confianza de $g(\theta)$ conviene emplear el siguiente pivote:
+$$
+\sqrt{n} \Bigg(\dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}}'\Bigg)^{-1/2} \Big(h(\hat{\theta}_{\small{MV}}) - h(\theta)\Big) \xrightarrow{\enskip D\enskip} N(0,1)
+$$
+Desarrollando el pivote:
+$$
+\begin{aligned}
+\sqrt{n} &\Bigg(\dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}}'\Bigg)^{-1/2} \Big(h(\hat{\theta}_{\small{MV}}) - h(\theta)\Big) \\
+&= 
+\sqrt{n} \Bigg(\begin{pmatrix}  2\hat{\mu}_{\small{MV}} & e^{\hat{\sigma}_{\small{MV}}^2} \end{pmatrix}  \begin{pmatrix} \hat{\sigma}_{\small{MV}}^2 & 0 \\ 0 & 2\hat{\sigma}_{\small{MV}}^4 \end{pmatrix} \begin{pmatrix}  2\hat{\mu}_{\small{MV}} \\ e^{\hat{\sigma}_{\small{MV}}^2} \end{pmatrix}\Bigg)^{-1/2} \Big(h(\hat{\theta}_{\small{MV}}) - h(\theta)\Big) \\
+&=
+\sqrt{n} \Bigg( 2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )  \Bigg)^{-1/2} \Big(h(\hat{\theta}_{\small{MV}}) - h(\theta)\Big) \\
+&= 
+\sqrt{n} \dfrac{h(\hat{\theta}_{\small{MV}}) - h(\theta)} {\sqrt{2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )}} \xrightarrow{\enskip D\enskip} N(0,1)
+\end{aligned}
+$$
+Con esto podemos construir el intervalo de confianza. Sean $q_1$ y $q_2$ dos cuantiles de la normal estándar tal que $q_1 < q_2$. Entonces:
+$$
+\begin{aligned}
+  &\mathbb{P}\Bigg[
+    q_1 < 
+      \sqrt{n} \dfrac{h(\hat{\theta}_{\small{MV}}) - h(\theta)} {\sqrt{2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )}}
+    < q_2
+  \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[
+    q_1 \sqrt{\dfrac{2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )}{n}} < 
+      h(\hat{\theta}_{\small{MV}}) - h(\theta)
+    < q_2 \sqrt{\dfrac{2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )}{n}}
+  \Bigg] = 0.95 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    - h(\hat{\theta}_{\small{MV}}) + q_1 \gamma < 
+      - h(\theta)
+    < - h(\hat{\theta}_{\small{MV}}) + q_2 \gamma
+  \Bigg] = 0.95 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    h(\hat{\theta}_{\small{MV}}) - q_1 \gamma > 
+      h(\theta)
+    > h(\hat{\theta}_{\small{MV}}) - q_2 \gamma
+  \Bigg] = 0.95 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    h(\hat{\theta}_{\small{MV}}) - q_2 \gamma < 
+      h(\theta)
+    < h(\hat{\theta}_{\small{MV}}) - q_1 \gamma
+  \Bigg] = 0.95 \ \ , \\
+  &\text{donde } \  \gamma = \sqrt{\dfrac{2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )}{n}}
+\end{aligned}
+$$
+El intervalo de confianza para $h(\theta) = \mu^2 + e^{\sigma^2}$ es entonces:
+$$
+\begin{aligned}
+IC_{h(\theta)} 
+&= \Bigg(
+  h(\hat{\theta}_{\small{MV}}) - q_{97.5\%}^{N(0,1)} \gamma \ , \
+  h(\hat{\theta}_{\small{MV}}) - q_{2.5\%}^{N(0,1)} \gamma
+\Bigg) \\
+&= \Bigg(
+  \hat{\mu}_{\small{MV}}^2 + e^{\hat{\sigma}_{\small{MV}}^2} - q_{97.5\%}^{N(0,1)} \gamma \ , \
+  \hat{\mu}_{\small{MV}}^2 + e^{\hat{\sigma}_{\small{MV}}^2} - q_{2.5\%}^{N(0,1)} \gamma
+\Bigg) \ , \\
+\text{donde } \ 
+&\hat{\sigma}_{\small{MV}}^2 = \dfrac{1}{n}\sum_{i=1}^n (x_i - \bar{x}_n)^2 \\
+&\hat{\mu}_{\small{MV}} = \bar{x}_n \\
+&\gamma = \sqrt{\dfrac{2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )}{n}}
+\end{aligned}
+$$
+Usando los datos generados en iii), computemos el intervalo. Primero, observemos que dado los valores verdaderos de $\theta$, $h(\theta)$ sería:
+```{r}
+h_theta <- mu^2 + exp(sigma2)
+h_theta
+```
+Es decir, $h(\theta)\Bigr|_{\substack{\mu=0.4\\\sigma_2=0.64}} = `r h_theta`$. Tengamos esto en cuenta, pues el intervalo de confianza debería contener este valor dentro de su rango. Calculemos entonces este intervalo:
+```{r}
+theta_mv <- matrix(  # Estimadores de MV
+  c(
+    mu_mv = mean(x),
+    sigma2_mv = var(x)*(n-1)/n
+    )
+  )
+h_theta_mv <- theta_mv[1]^2 + exp(theta_mv[2]) # h(theta_mv)
+gamma_mv <- sqrt(
+  (2*theta_mv[2] * (2*theta_mv[1]^2 + theta_mv[2]*exp(2*theta_mv[2]))
+   ) / n
+  ) # el elemento gamma que definimos para simplificar
+
+alpha <- 0.05 # significancia. confianza = 1 - alpha
+q1 <- qnorm(alpha/2) # cuantil 2.5%
+q2 <- qnorm(1 - alpha/2) # cuantil 97.5%
+
+# Intervalo
+IC <- c(
+  h_theta - q2 * gamma_mv,
+  h_theta - q1 * gamma_mv
+)
+IC
+```
+Esto es, el intervalo de confianza de $\mu^2 + e^{\sigma^2}$ al 95% de confianza es:
+$$
+IC_{h(\theta)} = \Big( `r IC[1]` \ , \  `r IC[2]`  \Big)
+$$
+El cual contiene al valor verdadero de $h(\theta)$.
+
+---
+
+\newpage
+
+### 5.v) Con los datos $\{x_i\}_{i=1}^{200}$ obtenidos en iii), usando el estadístico de Wald probar la hipótesis $$ \begin{aligned} &\mathbf{H_0}: \mu^2 + e^{\sigma^2} = 2 \ \ \ \text{vs} \\ &\mathbf{H_1}: \mu^2 + e^{\sigma^2} \neq 2 \end{aligned} $$ con nivel de significancia del 5%
+
+Bajo $\mathbf{H}_0$ el estadístico de Wald es
+$$
+\mathbf{W}_n = 
+\Big(\sqrt{n} \ \ (h(\hat{\theta}_{\small{MV}}) - 2 ) \Big)^2 (\dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}}')^{-1}  \xrightarrow{\enskip D\enskip} \chi_1^2
+$$
+Desarrollando:
+$$
+\begin{aligned}
+\mathbf{W}_n 
+  &= 
+    \Big(\sqrt{n} \ \ (h(\hat{\theta}_{\small{MV}}) - 2 ) \Big)^2 (\dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}} \hat{V_n} \dfrac{\partial h(\hat{\theta}_{\small{MV}})}{\partial \hat{\theta}_{\small{MV}}}')^{-1} \\ \\
+&\iff \mathbf{W}_n = n \dfrac{\Big(h(\hat{\theta}_{\small{MV}}) - 2\Big)^2} {2\hat{\sigma}_{\small{MV}}^2 ( 2\hat{\mu}_{\small{MV}}^2 + \hat{\sigma}_{\small{MV}}^2 e^{2\hat{\sigma}_{\small{MV}}^2} )} \xrightarrow{\enskip D\enskip} \chi_1^2 \\ \\
+&\iff \mathbf{W}_n = (\dfrac{h(\hat{\theta}_{\small{MV}}) - 2} {\gamma})^2 \xrightarrow{\enskip D\enskip} \chi_1^2 
+\end{aligned}
+$$
+Calculemos el estadístico
+```{r}
+wald_n <- ((h_theta_mv - 2) / gamma_mv)^2
+wald_n
+```
+Es decir, $\mathbf{W}_n = `r wald_n`$. El valor crítico al 5% de significancia, $\Sigma_{5\%}$ sería
+```{r}
+alpha <- 0.05
+q <- qchisq(alpha, df = 1, lower.tail = F)
+q
+```
+Observemos que
+$$
+\mathbf{W}_n = `r wald_n` < `r q` = \Sigma_{5\%}
+$$
+Por lo tanto, aceptamos la hipótesis nula. Esto era de esperarse, dado que el valor de 2 está dentro del intervalo de confianza con el mismo nivel de confianza.
+
+---
+
+---

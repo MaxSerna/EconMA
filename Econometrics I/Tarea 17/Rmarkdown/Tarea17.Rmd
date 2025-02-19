@@ -1,0 +1,386 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb", "mathtools"]
+    dev: cairo_pdf
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+```
+
+## 1. Instrucciones
+\rule{\textwidth}{1pt}
+
+### i) Generar una muestra $\{X_i\}_{i=1}^{260}$ de v.a.s i.i.d. (usar cualquier distribución)
+\hfill
+```{r}
+set.seed(1)
+n <- 260
+X <- rgamma(n = n, shape = 1)
+X <- as.matrix(X)
+```
+
+### ii) Generar una muestra $\{U_i\}_{i=1}^{260}$ de v.a.s i.i.d. donde $U_i \sim N(0, 0.4)$, $i = 1, 2, \dots, 260$ tal que $U_i$ y $X_i$ son independientes $\forall \ i \ne j$, $i,j\in\{1, 2, \dots, 260\}$
+\hfill
+```{r}
+set.seed(2)
+U <- rnorm(n = n, mean = 0, sd = sqrt(0.4))
+U <- as.matrix(U)
+```
+
+### iii) Usando los datos obtenidos en i) y ii), generar la muestra $\{Y_i\}_{i=1}^{120}$ donde $$Y_i = 0.6 + 0.5X_i + U_i, \ \ \ \ i=1,2,\dots,120$$
+```{r}
+Y <- 0.6 + 0.5*X[1:120] + U[1:120]
+```
+
+### iv) Usando los datos obtenidos en i) y ii), generar la muestra $\{Y_i\}_{i=121}^{260}$ donde $$Y_i = 0.9 + 0.3X_i + U_i, \ \ \ \ i=121,122,\dots,260$$
+\hfill
+```{r}
+Y[121:260] <- 0.9 + 0.3*X[121:260] + U[121:260]
+```
+Con los datos obtenidos $\begin{Bmatrix}\begin{pmatrix} Y_i \\ X_i  \end{pmatrix}\end{Bmatrix}_{i=1}^{260}$ se considera el modelo:
+$$
+\begin{cases}
+Y_i = \alpha_1 + \beta_1X_i + U_i \qquad \mathbb{E}[Y_i|1,X_i]=0, \qquad i = 1,2,\dots,120 \\
+Y_i = \alpha_2 + \beta_2X_i + V_i \qquad \mathbb{E}[Y_i|1,X_i]=0, \qquad i = 121,122,\dots,260
+\end{cases}
+$$
+```{r}
+W <- as.matrix(data.frame(Y=Y,X=X))
+```
+
+### v) Probar la hipótesis \newline\newline $\mathbf{H}_0 : \begin{pmatrix} \alpha_1 \\ \beta_1 \end{pmatrix} = \begin{pmatrix} \alpha_2 \\ \beta_2 \end{pmatrix}$ (i.e. no hay cambio estructural) \newline\newline contra la alternativa: \newline\newline $\mathbf{H}_1 : \begin{pmatrix} \alpha_1 \\ \beta_1 \end{pmatrix} \ne \begin{pmatrix} \alpha_2 \\ \beta_2 \end{pmatrix}$ \newline\newline con nivel de significancia $\alpha=0.05$, calculando y usando los estadísticos:
+
+#### a) $\dfrac{(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})' [\mathbf{R}(\mathbf{X'X})^{-1}\mathbf{R}']^{-1}(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})}{m\ \hat{\sigma}_{u_{MCU}}^2} \sim F_{m, n-k}$ \newline\newline $\begin{aligned} \textrm{donde } m &= \textrm{número de restricciones lineales} \\ n&= \textrm{tamaño de la muestra (número total de observaciones)} \\ k &= \textrm{dimensión del vector } \mathbf{b} = \begin{pmatrix} \alpha_1 & \beta_1 & \alpha_2 & \beta_2 \end{pmatrix}'. \end{aligned}$
+\hfill
+Primero notemos que, bajo $\mathbf{H}_0$ tenemos que:
+$$
+\begin{aligned}
+\mathbf{H}_0 : \begin{pmatrix} \alpha_1 \\ \beta_1 \end{pmatrix} = \begin{pmatrix} \alpha_2 \\ \beta_2 \end{pmatrix} 
+&\overset{\mathbf{H}_0}{\implies} 
+\begin{pmatrix} \alpha_1 \\ \beta_1 \end{pmatrix} - \begin{pmatrix} \alpha_2 \\ \beta_2 \end{pmatrix} = \mathbf{0}_{2\times1} \\
+&\overset{\mathbf{H}_0}{\implies}
+\begin{pmatrix} 1&0&0&0 \\ 0&1&0&0 \end{pmatrix}\begin{pmatrix} \alpha_1 \\ \beta_1 \\ \alpha_2 \\ \beta_2 \end{pmatrix} - \begin{pmatrix} 0&0&1&0 \\ 0&0&0&1 \end{pmatrix}\begin{pmatrix} \alpha_1 \\ \beta_1 \\ \alpha_2 \\ \beta_2 \end{pmatrix} = \mathbf{0}_{2\times1} \\
+&\overset{\mathbf{H}_0}{\implies}
+\begin{pmatrix}\begin{pmatrix} 1&0&0&0 \\ 0&1&0&0 \end{pmatrix} - \begin{pmatrix} 0&0&1&0 \\ 0&0&0&1 \end{pmatrix}\end{pmatrix}
+\begin{pmatrix} \alpha_1 \\ \beta_1 \\ \alpha_2 \\ \beta_2 \end{pmatrix} = \mathbf{0}_{2\times1} \\
+&\overset{\mathbf{H}_0}{\implies}
+\begin{pmatrix} 1&0&-1&0 \\ 0&1&0&-1 \end{pmatrix}
+\begin{pmatrix} \alpha_1 \\ \beta_1 \\ \alpha_2 \\ \beta_2 \end{pmatrix} = \mathbf{0}_{2\times1} \\
+&\overset{\mathbf{H}_0}{\implies}
+\begin{pmatrix} \mathbb{I}_2 & -\mathbb{I}_2 \end{pmatrix} \mathbf{b} = \mathbf{0}_{2\times1} \\ \\
+&\overset{\mathbf{H}_0}{\implies}
+\mathbf{Rb} = \mathbf{r}
+\end{aligned}
+$$
+Es decir, $\mathbf{R}$ es una matriz de dim. $\dfrac{k}{2} \times k$ donde $k=4$: $\mathbf{R} = \begin{pmatrix} \mathbb{I}_2 & -\mathbb{I}_2 \end{pmatrix}$. Además, $\mathbf{r}\in\mathbb{R}^2$ y $\mathbf{r}=\mathbf{0}_{2\times1}$
+
+Lo anterior implica que, bajo la hipótesis alternativa:
+$$
+\begin{aligned}
+\mathbf{H}_1 : \begin{pmatrix} \alpha_1 \\ \beta_1 \end{pmatrix} \ne \begin{pmatrix} \alpha_2 \\ \beta_2 \end{pmatrix} 
+&\overset{\mathbf{H}_1}{\implies}
+\mathbf{Rb} \ne \mathbf{r}
+\end{aligned}
+$$
+Ahora bien, dado que el estadístico de prueba para este ejemplo es:
+$$
+F_{\hat{\mathbf{b}}} = \dfrac{(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})' [\mathbf{R}(\mathbf{X'X})^{-1}\mathbf{R}']^{-1}(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})}{m\ \hat{\sigma}_{u_{MCU}}^2} \sim F_{2,256}
+$$
+La regla de decisión es tal que:
+
+Si $F_{\hat{b}} < F_\alpha$ no rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$.  
+  
+Si $F_{\hat{b}} \ge F_\alpha$ rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$
+
+Calculemos entonces lo necesario para construir la prueba.
+```{r}
+m <- 2
+k <- 4
+R <- matrix(c(diag(2), -diag(2)), nrow = k/2, ncol = k)
+R
+r <- matrix(c(0,0))
+r
+```
+Recordemos que en este escenario, $\mathbf{X}$ es de dimensiones $260 \times 4$
+```{r}
+X <- rbind(cbind(1, X[1:120], 0, 0),
+           cbind(0, 0, 1, X[121:n])
+           )
+dim(X)
+#Matriz (X'X)^{-1}
+XX_inv <- solve(t(X)%*%X)
+
+#Estimadores de MCU
+b_MCU <- XX_inv%*%t(X)%*%W[,1]
+b_MCU
+```
+
+Calculamos la varianza de los errores de MCU:
+```{r}
+#Errores de MCU
+U_MCU <- W[,1] - X%*%b_MCU
+#Varianza de los errores de MCU
+var.u_MCU <- 1/(n-k)*t(U_MCU)%*%U_MCU
+```
+
+El estadístico $F_{\hat{b}}$ es:
+```{r}
+F_b.hat <- (t(R%*%b_MCU - r)%*%solve(R%*%XX_inv%*%t(R))%*%(R%*%b_MCU - r)) / (m*var.u_MCU)
+F_b.hat
+```
+
+Y con $\alpha=5%$ calculemos $F_\alpha$:
+```{r}
+alpha <- 0.05
+F_alpha <- qf(alpha, df1 = m, df2 = n-k, lower.tail = F)
+F_alpha
+```
+
+Es decir: $$
+F_{\hat{b}} = `r F_b.hat` > `r F_alpha` = F_\alpha
+$$ Entonces, rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$; es decir, sí hay cambio estructural.
+
+#### b) $\dfrac{\hat{\mathbf{U}}_{MCR}'\hat{\mathbf{U}}_{MCR} - \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}} \sim F_{m, n-k}$
+\hfill
+\newline
+El estadístico es
+$$
+F_{\hat{b}}=\dfrac{\hat{\mathbf{U}}_{MCR}'\hat{\mathbf{U}}_{MCR} - \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}}
+$$
+La regla de decisión se vuelve entonces igual a la del inciso anterior, con la diferencia de que el estadístico tiene una forma diferente, pero con el mismo valor.
+
+Hemos visto en la tarea 14 que el numerador de este inciso es igual al numerador del inciso anterior, además de que, por definición, el denominador es una reexpresión del denominador anterior. En esencia, el estadístico de prueba debería ser igual. No obstante, para efectos del ejercicio, calcularemos todo lo necesario como si no supieramos el hecho mencionado. Dicho esto, solamente nos hace falta calcular $\hat{\mathbf{U}}_{MCR} \equiv \mathbf{Y} - \mathbf{X\hat{b}}_{MCR}$ donde 
+$$
+\mathbf{\hat{b}}_{MCR} = \begin{pmatrix} \mathbf{\hat{b}}_{1MCR}  \\ \mathbf{\hat{b}}_{2MCR} \end{pmatrix}  = \begin{pmatrix} (\mathbf{Z}'\mathbf{Z})^{-1}\mathbf{Z}'\mathbf{Y} \\ (\mathbf{Z}'\mathbf{Z})^{-1}\mathbf{Z}'\mathbf{Y} \end{pmatrix}
+$$
+con $\mathbf{Z}=\begin{pmatrix} \mathbf{X}_{11} \\ \mathbf{X}_{22} \end{pmatrix}$
+
+Comencemos con $\mathbf{\hat{b}}_{MCR}$
+```{r}
+# #mismo resultado
+# b_mcr_test <- b_MCU - XX_inv%*%t(R)%*%solve(R%*%XX_inv%*%t(R))%*%(R%*%b_MCU-r)
+Z <- cbind(1, W[,2])
+b_mcr <- rbind(solve(t(Z)%*%Z)%*%t(Z)%*%W[,1],
+               solve(t(Z)%*%Z)%*%t(Z)%*%W[,1])
+b_mcr
+```
+Ahora $\hat{\mathbf{U}}_{MCR}$
+```{r}
+U_mcr <- W[,1] - X%*%b_mcr
+```
+Calculemos entonces el estadístico $F_{\hat{b}}$
+```{r}
+F_b.hat <- (t(U_mcr)%*%U_mcr - t(U_MCU)%*%U_MCU) / (m*1/(n-k)*t(U_MCU)%*%U_MCU)
+F_b.hat
+```
+
+Dado que no hemos cambiado el nivel de significancia, podemos concluir: $$
+F_{\hat{b}} = `r F_b.hat` > `r F_alpha` = F_\alpha
+$$ Entonces, rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$. Sí hay cambio estructural. Observamos que el estadístico de prueba es exactamente igual al del inciso anterior.
+
+#### c) $\dfrac{(\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})' \mathbf{X'X} (\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}} \sim F_{m, n-k}$
+\hfill
+\newline
+El estadístico es
+$$
+F_{\hat{b}} = \dfrac{(\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})' \mathbf{X'X} (\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}} \sim F_{m, n-k}
+$$
+La regla de decisión se vuelve entonces igual a la del inciso anterior, con la diferencia de que el estadístico tiene una forma diferente, pero con el mismo valor.
+
+Calculemos:
+```{r}
+numerador <- t(b_mcr - b_MCU)%*%solve(XX_inv)%*%(b_mcr - b_MCU)
+denominador <- (m*1/(n-k)*t(U_MCU)%*%U_MCU)
+F_b.hat <- numerador / denominador
+F_b.hat
+```
+
+Dado que no hemos cambiado el nivel de significancia, podemos concluir: $$
+F_{\hat{b}} = `r F_b.hat` > `r F_alpha` = F_\alpha
+$$ Entonces, rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$. Observamos que el estadístico de prueba es exactamente igual al del inciso anterior, y también hay cambio estructural.
+
+\newpage
+
+## 2. Ver Wooldridge, J. M., *Introductory Econometrics: A Modern Approach. 6th Edition.* South-Western. CENGAGE Learning. Ejercicio c6, pág. 238. $$sleep = \alpha + \beta_1\,totwrk + \beta_2\,educ + \beta_3\,age + \beta_4\,age^2 + \beta_5\,yngkid + u$$
+\rule{\textwidth}{1pt}
+
+### i) Con un nivel de confianza del 5% probar la hipótesis de que no hay cambio estructural, i.e. para mujeres y hombres los 6 parámetros $\alpha, \beta_1,\dots\beta_5$ son iguales, calculando y usando los estadísticos:
+
+#### a) $\dfrac{(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})' [\mathbf{R}(\mathbf{X'X})^{-1}\mathbf{R}']^{-1}(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})}{m\ \hat{\sigma}_{u_{MCU}}^2} \sim F_{m, n-k}$ \newline\newline\newline $\begin{aligned} \textrm{donde } m &= \textrm{número de restricciones lineales} \\ n&= \textrm{tamaño de la muestra (número total de observaciones)} \\ k &= \textrm{dimensión del vector } \mathbf{b} = \begin{pmatrix} \alpha_m & \beta_{1m} & \dots & \beta_{5m} & \alpha_h & \beta_{1h} & \dots & \beta_{5h} \end{pmatrix}'. \end{aligned}$
+\hfill
+Queremos probar la hipótesis nula (i.e. no hay cambio estructural):
+$$
+\mathbf{H}_0 : \begin{pmatrix} \alpha_m \\ \beta_{1m} \\ \beta_{2m} \\ \beta_{3m} \\ \beta_{4m} \\ \beta_{5m} \end{pmatrix} = \begin{pmatrix} \alpha_h \\ \beta_{1h} \\ \beta_{2h} \\ \beta_{3h} \\ \beta_{4h} \\ \beta_{5h} \end{pmatrix}
+$$
+Contra la alternativa: 
+$$
+\mathbf{H}_1 : \begin{pmatrix} \alpha_m \\ \beta_{1m} \\ \beta_{2m} \\ \beta_{3m} \\ \beta_{4m} \\ \beta_{5m} \end{pmatrix} \ne \begin{pmatrix} \alpha_h \\ \beta_{1h} \\ \beta_{2h} \\ \beta_{3h} \\ \beta_{4h} \\ \beta_{5h} \end{pmatrix}
+$$
+\newline
+Con nivel de significancia $\alpha=0.05$, donde $m: \textrm{mujeres}$ y $h: \textrm{hombres}$.
+
+Siguiendo el mismo proceso que en 1.v.a, podemos ver que $\mathbf{R}$ es una matriz de dim. $\dfrac{k}{2} \times k$ donde $k=12$: $\mathbf{R} = \begin{pmatrix} \mathbb{I}_6 & -\mathbb{I}_6 \end{pmatrix}$. Además, $\mathbf{r}\in\mathbb{R}^6$ y $\mathbf{r}=\mathbf{0}_{6\times1}$
+
+Lo anterior implica que, bajo la hipótesis alternativa:
+$$
+\begin{aligned}
+\mathbf{H}_1 : \begin{pmatrix} \alpha_m \\ \beta_{1m} \\ \beta_{2m} \\ \beta_{3m} \\ \beta_{4m} \\ \beta_{5m} \end{pmatrix} \ne \begin{pmatrix} \alpha_h \\ \beta_{1h} \\ \beta_{2h} \\ \beta_{3h} \\ \beta_{4h} \\ \beta_{5h} \end{pmatrix} 
+&\overset{\mathbf{H}_1}{\implies}
+\mathbf{Rb} \ne \mathbf{r}
+\end{aligned}
+$$
+Ahora bien, dado que el estadístico de prueba para este ejemplo es:
+$$
+F_{\hat{\mathbf{b}}} = \dfrac{(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})' [\mathbf{R}(\mathbf{X'X})^{-1}\mathbf{R}']^{-1}(\mathbf{R\hat{b}}_{MCU} - \mathbf{r})}{m\ \hat{\sigma}_{u_{MCU}}^2} \sim F_{m,n-k}
+$$
+La regla de decisión es tal que:
+
+Si $F_{\hat{b}} < F_\alpha$ no rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$.  
+  
+Si $F_{\hat{b}} \ge F_\alpha$ rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$
+
+Calculemos entonces lo necesario para construir la prueba.
+```{r, warning=FALSE, message=FALSE}
+rm(list = ls())
+library(wooldridge)
+library(dplyr)
+
+sleep75["age^2"] <- sleep75$age^2
+
+mujeres <- sleep75 %>%
+  filter(male==0) %>% 
+  select(sleep, totwrk, educ, age, `age^2`, yngkid) %>% 
+  as.matrix()
+
+hombres <- sleep75 %>%
+  filter(male==1) %>% 
+  select(sleep, totwrk, educ, age, `age^2`, yngkid) %>% 
+  as.matrix()
+
+W <- as.matrix(rbind(mujeres, hombres))
+
+n <- nrow(W)
+m <- 6
+k <- 12
+R <- matrix(c(diag(m), -diag(m)), nrow = k/2, ncol = k)
+r <- matrix(rep(0, m))
+```
+Recordemos que en este escenario, $\mathbf{X}$ es de dimensiones $`r n` \times `r k`$
+```{r, results='asis', warning=FALSE}
+library(xtable)
+X <- rbind(cbind(1, mujeres[,-1], 0, 0, 0, 0, 0, 0),
+           cbind(0, 0, 0, 0, 0, 0, 1, hombres[,-1]))
+
+dim(X)
+#Matriz (X'X)^{-1}
+XX_inv <- solve(t(X)%*%X)
+
+#Estimadores de MCU
+b_MCU <- XX_inv%*%t(X)%*%W[,1]
+rownames(b_MCU) <- c("$\\hat{\\alpha}_m$", "$\\hat{\\beta}_{1m}$",
+                     "$\\hat{\\beta}_{2m}$", "$\\hat{\\beta}_{3m}$",
+                     "$\\hat{\\beta}_{4m}$", "$\\hat{\\beta}_{5m}$",
+                     "$\\hat{\\alpha}_h$", "$\\hat{\\beta}_{1h}$",
+                     "$\\hat{\\beta}_{2h}$", "$\\hat{\\beta}_{3h}$",
+                     "$\\hat{\\beta}_{4h}$", "$\\hat{\\beta}_{5h}$")
+
+colnames(b_MCU) <- "Valor"
+print(xtable(b_MCU, digits = 5),
+sanitize.text.function=function(x){x},
+comment = F)
+```
+Calculamos la varianza de los errores de MCU:
+```{r}
+#Errores de MCU
+U_MCU <- W[,1] - X%*%b_MCU
+#Varianza de los errores de MCU
+var.u_MCU <- 1/(n-k)*t(U_MCU)%*%U_MCU
+```
+El estadístico $F_{\hat{b}}$ es:
+```{r}
+F_b.hat <- (t(R%*%b_MCU - r)%*%solve(R%*%XX_inv%*%t(R))%*%(R%*%b_MCU - r)) / (m*var.u_MCU)
+F_b.hat
+```
+
+Y con $\alpha=5%$ calculemos $F_\alpha$:
+```{r}
+alpha <- 0.05
+F_alpha <- qf(alpha, df1 = m, df2 = n-k, lower.tail = F)
+F_alpha
+```
+
+Es decir: $$
+F_{\hat{b}} = `r F_b.hat` > `r F_alpha` = F_\alpha
+$$ Entonces, rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$. Es decir, sí hay cambio estructural, y los estimadores son distintos entre hombres y mujeres.
+
+#### b) $\dfrac{\hat{\mathbf{U}}_{MCR}'\hat{\mathbf{U}}_{MCR} - \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}} \sim F_{m, n-k}$
+\hfill
+\newline
+El estadístico es
+$$
+F_{\hat{b}}=\dfrac{\hat{\mathbf{U}}_{MCR}'\hat{\mathbf{U}}_{MCR} - \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}}
+$$
+La regla de decisión se vuelve entonces igual a la del inciso anterior, con la diferencia de que el estadístico tiene una forma diferente, pero con el mismo valor.
+
+Solamente nos hace falta calcular $\hat{\mathbf{U}}_{MCR} \equiv \mathbf{Y} - \mathbf{X\hat{b}}_{MCR}$ donde 
+$$
+\mathbf{\hat{b}}_{MCR} = \begin{pmatrix} \mathbf{\hat{b}}_{1MCR}  \\ \mathbf{\hat{b}}_{2MCR} \end{pmatrix}  = \begin{pmatrix} (\mathbf{Z}'\mathbf{Z})^{-1}\mathbf{Z}'\mathbf{Y} \\ (\mathbf{Z}'\mathbf{Z})^{-1}\mathbf{Z}'\mathbf{Y} \end{pmatrix}
+$$
+con $\mathbf{Z}=\begin{pmatrix} \mathbf{X}_{11} \\ \mathbf{X}_{22} \end{pmatrix}$
+
+Comencemos con $\mathbf{\hat{b}}_{MCR}$
+```{r}
+# #mismo resultado
+# b_mcr_test <- b_MCU - XX_inv%*%t(R)%*%solve(R%*%XX_inv%*%t(R))%*%(R%*%b_MCU-r)
+Z <- cbind(1, W[,-1])
+b_mcr <- rbind(solve(t(Z)%*%Z)%*%t(Z)%*%W[,1],
+               solve(t(Z)%*%Z)%*%t(Z)%*%W[,1])
+b_mcr
+```
+Ahora $\hat{\mathbf{U}}_{MCR}$
+```{r}
+U_mcr <- W[,1] - X%*%b_mcr
+```
+Calculemos entonces el estadístico $F_{\hat{b}}$
+```{r}
+F_b.hat <- (t(U_mcr)%*%U_mcr - t(U_MCU)%*%U_MCU) / (m*1/(n-k)*t(U_MCU)%*%U_MCU)
+F_b.hat
+```
+
+Dado que no hemos cambiado el nivel de significancia, podemos concluir: 
+$$
+F_{\hat{b}} = `r F_b.hat` > `r F_alpha` = F_\alpha
+$$ 
+Entonces, rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$. Sí hay cambio estructural, y los estimadores cambian dependiendo del género. Observamos que el estadístico de prueba es exactamente igual al del inciso anterior.
+
+#### c) $\dfrac{(\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})' \mathbf{X'X} (\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}} \sim F_{m, n-k}$
+\hfill
+\newline
+El estadístico es
+$$
+F_{\hat{b}} = \dfrac{(\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})' \mathbf{X'X} (\mathbf{\hat{b}}_{MCR} - \mathbf{\hat{b}}_{MCU})}{m\ \dfrac{1}{n-k}\ \hat{\mathbf{U}}_{MCU}'\hat{\mathbf{U}}_{MCU}} \sim F_{m, n-k}
+$$
+La regla de decisión se vuelve entonces igual a la del inciso anterior, con la diferencia de que el estadístico tiene una forma diferente, pero con el mismo valor.
+
+Calculemos:
+```{r}
+numerador <- t(b_mcr - b_MCU)%*%solve(XX_inv)%*%(b_mcr - b_MCU)
+denominador <- (m*1/(n-k)*t(U_MCU)%*%U_MCU)
+F_b.hat <- numerador / denominador
+F_b.hat
+```
+
+Dado que no hemos cambiado el nivel de significancia, podemos concluir: $$
+F_{\hat{b}} = `r F_b.hat` > `r F_alpha` = F_\alpha
+$$ Entonces, rechazamos $\mathbf{H}_0: \mathbf{Rb}=\mathbf{r}$ en favor de $\mathbf{H}_1: \mathbf{Rb}\neq\mathbf{r}$. Observamos que el estadístico de prueba es exactamente igual al del inciso anterior, y también hay cambio estructural: los estimadores dependen del género.

@@ -1,0 +1,435 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+  \setmainfont[]{Courier}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath}
+\usepackage{setspace}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+
+\subsubsection{i) Generar una muestra
+i.i.d.}\label{i-generar-una-muestra-i.i.d.}
+
+\(\begin{Bmatrix}\begin{pmatrix} X_{1i} \\ X_{2i} \\ X_{3i} \end{pmatrix}\end{Bmatrix}_{i=1}^{500}\)
+donde
+\(\begin{pmatrix} X_{1i} \\ X_{2i} \\ X_{3i} \end{pmatrix} \sim{N_3} \begin{pmatrix} \begin{pmatrix} 1\\ 0\\ 2 \end{pmatrix}, \begin{pmatrix} 0.8 & 0.4 & -0.2\\ 0.4 & 1.0 & -0.8 \\ -0.2 & -0.8 & 2.0 \end{pmatrix}\end{pmatrix}\).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(mvtnorm)}
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{6}\NormalTok{)}
+\FunctionTok{rm}\NormalTok{(}\AttributeTok{list =} \FunctionTok{ls}\NormalTok{())}
+
+\NormalTok{n }\OtherTok{\textless{}{-}} \DecValTok{500}
+\NormalTok{mu }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{2}\NormalTok{)}
+\NormalTok{Sigma }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\FloatTok{0.8}\NormalTok{, }\FloatTok{0.4}\NormalTok{, }\SpecialCharTok{{-}}\FloatTok{0.2}\NormalTok{,}
+                  \FloatTok{0.4}\NormalTok{, }\DecValTok{1}\NormalTok{, }\SpecialCharTok{{-}}\FloatTok{0.8}\NormalTok{,}
+                  \SpecialCharTok{{-}}\FloatTok{0.2}\NormalTok{, }\SpecialCharTok{{-}}\FloatTok{0.8}\NormalTok{, }\DecValTok{2}\NormalTok{),}
+                \AttributeTok{nrow =} \DecValTok{3}\NormalTok{,}
+                \AttributeTok{byrow =}\NormalTok{ T)}
+\NormalTok{Z }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+  \FunctionTok{rmvnorm}\NormalTok{(}
+\NormalTok{    n,}
+    \AttributeTok{mean =}\NormalTok{ mu,}
+    \AttributeTok{sigma =}\NormalTok{ Sigma)}
+\NormalTok{  )}
+\FunctionTok{names}\NormalTok{(Z) }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"X\_1"}\NormalTok{, }\StringTok{"X\_2"}\NormalTok{, }\StringTok{"X\_3"}\NormalTok{)}
+
+\NormalTok{Z }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(Z)}
+\NormalTok{X }\OtherTok{\textless{}{-}} \FunctionTok{cbind}\NormalTok{(}\DecValTok{1}\NormalTok{, Z[,}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{])}
+
+\NormalTok{n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(Z)}
+\NormalTok{k }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(Z)}
+\end{Highlighting}
+\end{Shaded}
+
+\onehalfspacing
+
+\subsubsection{\texorpdfstring{ii) Generar una muestra
+\(\{U_i\}_{i=1}^{500}\) de v.a.s i.i.d. con \(E(U_i) = 0\), tal que
+\(U_i\) y el vector aleatorio
+\(\begin{pmatrix} X_{1j} & X_{2j} & X_{3j} \end{pmatrix}\) sean
+independientes \(\forall i \neq j\), \(i, j \in \{1, 2, \ldots, 500\}\).
+Usar cualquier distribución para \(U_i\) que se quiera siempre y cuando
+\textbf{no} sea
+Normal.}{ii) Generar una muestra \textbackslash\{U\_i\textbackslash\}\_\{i=1\}\^{}\{500\} de v.a.s i.i.d. con E(U\_i) = 0, tal que U\_i y el vector aleatorio \textbackslash begin\{pmatrix\} X\_\{1j\} \& X\_\{2j\} \& X\_\{3j\} \textbackslash end\{pmatrix\} sean independientes \textbackslash forall i \textbackslash neq j, i, j \textbackslash in \textbackslash\{1, 2, \textbackslash ldots, 500\textbackslash\}. Usar cualquier distribución para U\_i que se quiera siempre y cuando  sea Normal.}}\label{ii-generar-una-muestra-u_i_i1500-de-v.a.s-i.i.d.-con-eu_i-0-tal-que-u_i-y-el-vector-aleatorio-beginpmatrix-x_1j-x_2j-x_3j-endpmatrix-sean-independientes-forall-i-neq-j-i-j-in-1-2-ldots-500.-usar-cualquier-distribuciuxf3n-para-u_i-que-se-quiera-siempre-y-cuando-sea-normal.}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{U }\OtherTok{\textless{}{-}} \FunctionTok{rlogis}\NormalTok{(n, }\AttributeTok{scale =} \DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{\texorpdfstring{iii) Usando los datos obtenidos en i) y
+ii), generar la muestra \(\{Y_i\}_{i=1}^500\)
+donde}{iii) Usando los datos obtenidos en i) y ii), generar la muestra \textbackslash\{Y\_i\textbackslash\}\_\{i=1\}\^{}500 donde}}\label{iii-usando-los-datos-obtenidos-en-i-y-ii-generar-la-muestra-y_i_i1500-donde}
+
+\[
+Y_i = -1 + 2.5X_{1i} - 2X_{2i} + 3X_{3i} + U_i, \quad i = 1, 2, \dots, 500
+\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Y }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\DecValTok{1} \SpecialCharTok{+} \FloatTok{2.5}\SpecialCharTok{*}\NormalTok{Z[,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}} \DecValTok{2}\SpecialCharTok{*}\NormalTok{Z[,}\DecValTok{2}\NormalTok{] }\SpecialCharTok{+} \DecValTok{3}\SpecialCharTok{*}\NormalTok{Z[,}\DecValTok{3}\NormalTok{] }\SpecialCharTok{+}\NormalTok{ U}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{iv) Con los datos obtenidos en i) y iii), estimar por
+mínimos cuadrados ordinarios el modelo de regresión
+lineal}\label{iv-con-los-datos-obtenidos-en-i-y-iii-estimar-por-muxednimos-cuadrados-ordinarios-el-modelo-de-regresiuxf3n-lineal}
+
+\[
+Y_i = b_1 + b_2X_{1i} + b_3X_{2i} + b_4X_{3i} + U_i, \quad i = 1, 2, \dots, 500
+\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{regresion }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(Y}\SpecialCharTok{\textasciitilde{}}\NormalTok{X\_1 }\SpecialCharTok{+}\NormalTok{ X\_2 }\SpecialCharTok{+}\NormalTok{ X\_3, }\AttributeTok{data =} \FunctionTok{data.frame}\NormalTok{(Y, Z))}
+\FunctionTok{print}\NormalTok{(xtable}\SpecialCharTok{::}\FunctionTok{xtable}\NormalTok{(}\FunctionTok{summary}\NormalTok{(regresion), }\AttributeTok{digits =} \DecValTok{6}\NormalTok{), }\AttributeTok{comment =} \ConstantTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+(Intercept) & -0.892335 & 0.525984 & -1.696505 & 0.090418 \\ 
+  X\_1 & 2.156798 & 0.309130 & 6.977003 & 0.000000 \\ 
+  X\_2 & -1.966675 & 0.316132 & -6.221053 & 0.000000 \\ 
+  X\_3 & 3.089357 & 0.203891 & 15.152037 & 0.000000 \\ 
+   \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{\texorpdfstring{v) Encontrar un intervalo de confianza de
+\(b_2\) con nivel de confianza de 90\%
+(aproximadamente)}{v) Encontrar un intervalo de confianza de b\_2 con nivel de confianza de 90\% (aproximadamente)}}\label{v-encontrar-un-intervalo-de-confianza-de-b_2-con-nivel-de-confianza-de-90-aproximadamente}
+
+\begin{itemize}
+  \item[a)] Sin suponer homocedasticidad
+\end{itemize}
+
+Podemos utilizar el pivote \[
+\dfrac{c'\hat{b_n} - c'b}{\sqrt{c'\frac{1}{n}\hat{V_n}c}} \xrightarrow{\enskip D\enskip} N(0,1)
+\] donde \(c=\begin{pmatrix} 0 & 1 & 0 & 0 \end{pmatrix}\) y
+\(\hat{V_n} = (\frac{1}{n}X'X)^{-1} (\frac{1}{n}\sum_{j=1}^{n} U_j^2x_jx_j') (\frac{1}{n}X'X)^{-1}\)
+
+Por tanto, con un \(\alpha=10\%\), existe un cuantil \(q\) de la normal
+estándar tal que \[
+\begin{aligned}
+  \mathbb{P}\Bigg[ -q < \dfrac{c'\hat{b_n} - c'b}{\sqrt{c'\frac{1}{n}\hat{V_n}c}} < q \Bigg] = 0.9
+  &\iff
+  \mathbb{P}\Bigg[ -q\sqrt{c'\frac{1}{n}\hat{V_n}c} < c'\hat{b_n} - c'b< q\sqrt{c'\frac{1}{n}\hat{V_n}c} \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ - \Big(c'\hat{b_n} + q\sqrt{c'\frac{1}{n}\hat{V_n}c}\Big) <  - c'b < - \Big(c'\hat{b_n} - q\sqrt{c'\frac{1}{n}\hat{V_n}c}\Big) \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ c'\hat{b_n} + q\sqrt{c'\frac{1}{n}\hat{V_n}c} > c'b > c'\hat{b_n} - q\sqrt{c'\frac{1}{n}\hat{V_n}c} \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ c'\hat{b_n} - q\sqrt{c'\frac{1}{n}\hat{V_n}c} < c'b < c'\hat{b_n} + q\sqrt{c'\frac{1}{n}\hat{V_n}c} \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ \hat{b_{n_2}} - q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}} < b_2 < \hat{b_{n_2}} + q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}} \Bigg] = 0.9
+\end{aligned}
+\] El intervalo de confianza entonces es \[
+\Bigg(\hat{b_{n_2}} - q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}} \ \ \ , \ \ \ \hat{b_{n_2}} + q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}}\Bigg)
+\] Donde
+\(\hat{V_{n_{22}}} = (\frac{1}{n}X'X)^{-1} (\frac{1}{n}\sum_{j=1}^{n} U_j^2x_jx_j') (\frac{1}{n}X'X)^{-1}_{22}\)
+
+Podemos calcularlo:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{alpha }\OtherTok{\textless{}{-}} \FloatTok{0.1}
+\NormalTok{b\_hat\_2 }\OtherTok{\textless{}{-}}\NormalTok{ regresion}\SpecialCharTok{$}\NormalTok{coefficients[}\DecValTok{2}\NormalTok{]}
+\NormalTok{q }\OtherTok{\textless{}{-}} \FunctionTok{qnorm}\NormalTok{(}\AttributeTok{p =}\NormalTok{ alpha}\SpecialCharTok{/}\DecValTok{2}\NormalTok{, }\AttributeTok{lower.tail =}\NormalTok{ F)}
+\NormalTok{X }\OtherTok{\textless{}{-}} \FunctionTok{as.matrix}\NormalTok{(}\FunctionTok{cbind}\NormalTok{(}\DecValTok{1}\NormalTok{, Z))}
+\NormalTok{XX }\OtherTok{\textless{}{-}} \FunctionTok{t}\NormalTok{(X)}\SpecialCharTok{\%*\%}\NormalTok{X}
+\NormalTok{Uj.sq }\OtherTok{\textless{}{-}}\NormalTok{ regresion}\SpecialCharTok{$}\NormalTok{residuals}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{suma\_Uj.sq\_xj\_xj }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{4}\NormalTok{), }\AttributeTok{nrow =} \DecValTok{4}\NormalTok{, }\AttributeTok{ncol =} \DecValTok{4}\NormalTok{)}
+\ControlFlowTok{for}\NormalTok{ (j }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{n) \{}
+\NormalTok{  suma\_Uj.sq\_xj\_xj }\OtherTok{\textless{}{-}}\NormalTok{ suma\_Uj.sq\_xj\_xj }\SpecialCharTok{+}\NormalTok{ Uj.sq[j]}\SpecialCharTok{*}\NormalTok{X[j,]}\SpecialCharTok{\%*\%}\FunctionTok{t}\NormalTok{(X[j,])}
+\NormalTok{\}}
+\NormalTok{mean\_Uj.sq\_xj\_xj }\OtherTok{\textless{}{-}}\NormalTok{ (}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n)}\SpecialCharTok{*}\NormalTok{suma\_Uj.sq\_xj\_xj}
+\NormalTok{V\_hat\_hetero }\OtherTok{\textless{}{-}} \FunctionTok{solve}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n}\SpecialCharTok{*}\NormalTok{XX)}\SpecialCharTok{\%*\%}\NormalTok{mean\_Uj.sq\_xj\_xj}\SpecialCharTok{\%*\%}\FunctionTok{solve}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n}\SpecialCharTok{*}\NormalTok{XX)}
+\NormalTok{V\_hat\_22\_hetero }\OtherTok{\textless{}{-}}\NormalTok{ V\_hat\_hetero[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{]}
+\NormalTok{V\_hat\_hetero}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                      X_1       X_2        X_3
+##     145.42992 -35.015880 -24.92654 -43.304769
+## X_1 -35.01588  49.912547 -24.80637  -5.198505
+## X_2 -24.92654 -24.806367  59.80729  23.078705
+## X_3 -43.30477  -5.198505  23.07870  24.356462
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{CI\_het }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(b\_hat\_2 }\SpecialCharTok{{-}}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(V\_hat\_22\_hetero}\SpecialCharTok{/}\NormalTok{n),}
+\NormalTok{        b\_hat\_2 }\SpecialCharTok{+}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(V\_hat\_22\_hetero}\SpecialCharTok{/}\NormalTok{n))}
+\NormalTok{CI\_het}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##      X_1      X_1 
+## 1.637105 2.676491
+\end{verbatim}
+
+Es decir, el intervalo de confianza para \(b_2\)
+\underline{sin suponer homocedasticidad} es: \[
+\Big(1.6371047 , \ \ \ 2.6764914\Big)
+\]
+
+\begin{itemize}
+  \item[b)] Suponiendo homocedasticidad
+\end{itemize}
+
+El intervalo de confianza sigue siendo el mismo, con la diferencia de
+que ahora
+\(\hat{V_{n_{22}}} = \hat{\sigma}_u^2(\frac{1}{n}X'X)^{-1}_{22}\).
+Calculando:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{var.residual }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(regresion)}\SpecialCharTok{$}\NormalTok{sigma}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{V\_hat\_homo }\OtherTok{\textless{}{-}}\NormalTok{ var.residual}\SpecialCharTok{*}\FunctionTok{solve}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n}\SpecialCharTok{*}\NormalTok{XX)}
+\NormalTok{V\_hat\_22\_homo }\OtherTok{\textless{}{-}}\NormalTok{ V\_hat\_homo[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{]}
+\NormalTok{V\_hat\_homo}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                      X_1       X_2        X_3
+##     138.32981 -37.069638 -15.15984 -38.127353
+## X_1 -37.06964  47.780544 -22.04175  -3.449607
+## X_2 -15.15984 -22.041749  49.96977  17.091204
+## X_3 -38.12735  -3.449607  17.09120  20.785682
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{CI\_homo }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(b\_hat\_2 }\SpecialCharTok{{-}}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(V\_hat\_22\_homo}\SpecialCharTok{/}\NormalTok{n),}
+\NormalTok{             b\_hat\_2 }\SpecialCharTok{+}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(V\_hat\_22\_homo}\SpecialCharTok{/}\NormalTok{n))}
+\NormalTok{CI\_homo}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##      X_1      X_1 
+## 1.648325 2.665271
+\end{verbatim}
+
+Es decir, el intervalo de confianza para \(b_2\)
+\underline{suponiendo homocedasticidad} es: \[
+\Big(1.6483252 , \ \ \ 2.6652709\Big)
+\]
+
+\subsubsection{\texorpdfstring{v) Encontrar un intervalo de confianza de
+\(b_1 - 3b_2\) con nivel de confianza de 95\%
+(aproximadamente)}{v) Encontrar un intervalo de confianza de b\_1 - 3b\_2 con nivel de confianza de 95\% (aproximadamente)}}\label{v-encontrar-un-intervalo-de-confianza-de-b_1---3b_2-con-nivel-de-confianza-de-95-aproximadamente}
+
+\begin{itemize}
+  \item[a)] Sin suponer homocedasticidad
+\end{itemize}
+
+En este caso requerimos un pivote que nos permita considerar formas no
+lineales de \(b\); podemos utilizar el siguiente: \[
+\dfrac{g(\hat{b_n}) - g(b)}{\sqrt{\frac{\partial{g(\hat{b_n})}}{\partial{\hat{b_n}}}\frac{1}{n}\hat{V_n}\frac{\partial{g(\hat{b_n})}}{\partial{\hat{b_n}}}'}} \xrightarrow{\enskip D\enskip} N(0,1)
+\]
+
+Donde \(g(\hat{b_n}) = b_1 - 3b_2\),
+\(\frac{\partial{g(\hat{b_n})}}{\partial{\hat{b_n}}} = \begin{pmatrix} 1 & -3 & 0 & 0\end{pmatrix}\)
+y
+\(\hat{V_n} = (\frac{1}{n}X'X)^{-1} (\frac{1}{n}\sum_{j=1}^{n} U_j^2x_jx_j') (\frac{1}{n}X'X)^{-1}\).
+Dado esto, el denominador del pivote se convierte en:
+
+\[
+\begin{aligned}
+  (1,-3,0,0)\frac{1}{n}\hat{V_n}\begin{pmatrix} 1 \\ -3 \\ 0 \\ 0\end{pmatrix}
+  &\iff
+  \frac{1}{n} \begin{pmatrix} \hat{V}_{n_{11}} - 3\hat{V}_{n_{12}}, & \hat{V}_{n_{12}} - 3\hat{V}_{n_{22}}, & \hat{V}_{n_{13}} - 3\hat{V}_{n_{23}}, & \hat{V}_{n_{14}} - 3\hat{V}_{n_{24}}\end{pmatrix} \begin{pmatrix} 1 \\ -3 \\ 0 \\ 0\end{pmatrix} \\
+  &\iff
+  \frac{1}{n} \Big(\hat{V}_{n_{11}} - 3\hat{V}_{n_{12}} -3(\hat{V}_{n_{12}} - 3\hat{V}_{n_{22}})\Big) \\
+  &\iff
+  \frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)
+\end{aligned}
+\] El pivote entonces es: \[
+\dfrac{g(\hat{b_n}) - g(b)}{\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}} \xrightarrow{\enskip D\enskip} N(0,1)
+\]
+
+Por tanto, con un \(\alpha=5\%\), existe un cuantil \(q\) de la normal
+estándar tal que \[
+\begin{aligned}
+  &\mathbb{P}\Bigg[ -q < \dfrac{g(\hat{b_n}) - g(b)}{\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}} < q \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ -q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} < g(\hat{b_n}) - g(b) < q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ - \Bigg(g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}\Bigg) <  - g(b) < - \Bigg(g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}\Bigg) \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} > g(b) > g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} < g(b) < g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \Bigg] = 0.95
+\end{aligned}
+\] El intervalo de confianza entonces es \[
+\Bigg(g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \ \ \ , \ \ \ g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}\Bigg)
+\] Calculando
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{g\_b\_hat }\OtherTok{\textless{}{-}}\NormalTok{ regresion}\SpecialCharTok{$}\NormalTok{coefficients[}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}} \DecValTok{3}\SpecialCharTok{*}\NormalTok{regresion}\SpecialCharTok{$}\NormalTok{coefficients[}\DecValTok{2}\NormalTok{]}
+\NormalTok{alpha }\OtherTok{\textless{}{-}} \FloatTok{0.05}
+\NormalTok{q }\OtherTok{\textless{}{-}} \FunctionTok{qnorm}\NormalTok{(}\AttributeTok{p =}\NormalTok{ alpha}\SpecialCharTok{/}\DecValTok{2}\NormalTok{, }\AttributeTok{lower.tail =}\NormalTok{ F)}
+
+\NormalTok{CI\_het2 }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(g\_b\_hat }\SpecialCharTok{{-}}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n }\SpecialCharTok{*}\NormalTok{ (V\_hat\_hetero[}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}} \DecValTok{6}\SpecialCharTok{*}\NormalTok{V\_hat\_hetero[}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{] }\SpecialCharTok{+} \DecValTok{9}\SpecialCharTok{*}\NormalTok{V\_hat\_hetero[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{])),}
+\NormalTok{        g\_b\_hat }\SpecialCharTok{+}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n }\SpecialCharTok{*}\NormalTok{ (V\_hat\_hetero[}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}} \DecValTok{6}\SpecialCharTok{*}\NormalTok{V\_hat\_hetero[}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{] }\SpecialCharTok{+} \DecValTok{9}\SpecialCharTok{*}\NormalTok{V\_hat\_hetero[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{])))}
+\NormalTok{CI\_het2}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## (Intercept) (Intercept) 
+##   -9.849240   -4.876218
+\end{verbatim}
+
+Es decir, el intervalo de confianza para \(b_1 - 3b_2\)
+\underline{sin suponer homocedasticidad} es: \[
+\Big(-9.8492401 , \ \ \ -4.8762182\Big)
+\]
+
+\begin{itemize}
+  \item[b)] Suponiendo homocedasticidad
+\end{itemize}
+
+El intervalo de confianza sigue siendo el mismo, con la diferencia de
+que ahora \(\hat{V_n} = \hat{\sigma}_u^2(\frac{1}{n}X'X)^{-1}\).
+Calculando:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{CI\_homo2 }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(g\_b\_hat }\SpecialCharTok{{-}}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n }\SpecialCharTok{*}\NormalTok{ (V\_hat\_homo[}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}} \DecValTok{6}\SpecialCharTok{*}\NormalTok{V\_hat\_homo[}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{] }\SpecialCharTok{+} \DecValTok{9}\SpecialCharTok{*}\NormalTok{V\_hat\_homo[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{])),}
+\NormalTok{        g\_b\_hat }\SpecialCharTok{+}\NormalTok{ q}\SpecialCharTok{*}\FunctionTok{sqrt}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\NormalTok{n }\SpecialCharTok{*}\NormalTok{ (V\_hat\_homo[}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}} \DecValTok{6}\SpecialCharTok{*}\NormalTok{V\_hat\_homo[}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{] }\SpecialCharTok{+} \DecValTok{9}\SpecialCharTok{*}\NormalTok{V\_hat\_homo[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{])))}
+\NormalTok{CI\_homo2}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## (Intercept) (Intercept) 
+##   -9.827570   -4.897888
+\end{verbatim}
+
+Es decir, el intervalo de confianza para \(b_1 - 3b_2\)
+\underline{suponiendo homocedasticidad} es: \[
+\Big(-9.82757 , \ \ \ -4.8978883\Big)
+\]
+
+\end{document}

@@ -1,0 +1,498 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb"]
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+# set.seed(1)
+```
+
+### 1. En este ejercicio, se ilustra que bajo ciertos supuestos el estimador de mínimos cuadrados ordinarios de $\mathbf{b}$ es *incondicionalmente insesgado*
+
+#### i) Generar (usando algún paquete econométrico) una muestra i.i.d.:
+
+$$
+\qquad \Biggl\{\begin{pmatrix}Y_i\\X_{1i}\\X_{2i}\end{pmatrix}\Bigg\}_{i=1}^{100}
+$$ donde $\begin{pmatrix}Y_i\\X_{1i}\\X_{2i}\end{pmatrix}\sim{N_3}\Biggl(\begin{pmatrix}1\\0\\2\end{pmatrix},\begin{pmatrix}0.8 & 0.4 & -0.2\\0.4 & 1.0 & -0.8\\-0.2 & -0.8 & 2.0\end{pmatrix}\Biggl)$
+
+```{r}
+library(mvtnorm)
+n <- 100
+mu <- c(1,0,2)
+Sigma <- matrix(c(0.8, 0.4, -0.2,
+                  0.4, 1, -0.8,
+                  -0.2, -0.8, 2),
+                nrow = 3,
+                byrow = T)
+Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(Z) <- c("Y", "X1", "X2")
+```
+
+
+#### ii) Con los datos obtenidos en i), estimar por mínimos cuadrados ordinarios el modelo de regresión lineal:  
+
+$$
+Y_i = b_0 + b_1X_{1i} + b_2X_{2i} + U_i
+$$ 
+
+> con $i = 1, 2, \dots, 100$. Obtendiendo así el estimador $\hat{b}_{MCO} = \begin{pmatrix} \hat{b}_0 \\ \hat{b}_1 \\ \hat{b}_2 \end{pmatrix}$
+    
+```{r}
+linear_regression <- lm(Y~X1 + X2, data = Z)
+b_hat_mco <- linear_regression$coefficients
+names(b_hat_mco) <- c("bhat0", "bhat1", "bhat2")
+b_hat_mco
+```
+
+#### iii) Con los parámetros dados en i), encontrar el valor verdadero de $\mathbf{b}$.
+
+> Podemos utilizar la siguiente fórmula, compuesta por los elementos dados en i):
+    
+$$
+\mathbf{b} = \begin{pmatrix} \mu_Y - \Sigma_{YX}\Sigma_X^{-1}\mu_X \\ \\ \Sigma_X^{-1}(\Sigma_{YX})' \end{pmatrix}
+$$
+```{r}
+
+#Calculamos b_0
+
+mu_y <- 1
+Sigma_YX <- matrix(c(0.4, -0.2), 
+                   nrow = 1)
+Sigma_X <- matrix(c(1, -0.8, -0.8, 2),
+                  byrow = T,
+                  nrow = 2)
+mu_x <- matrix(c(0, 2),
+               ncol = 1)
+b0 <- mu_y - Sigma_YX%*%solve(Sigma_X)%*%mu_x
+
+#Calculamos b_1 y b_2
+B <- solve(Sigma_X)%*%t(Sigma_YX)
+
+# Unimos y encontramos b
+b <- matrix(c(b0,
+              solve(Sigma_X)%*%t(Sigma_YX)))
+b
+```
+#### iv) Repetir 999 veces los pasos i) y ii) para obtener 1000 estimadores $\{\hat{b}_{MCO_i}\}_{i=1}^{1000}$ de $\mathbf{b}$
+
+```{r}
+bhats_DF <- data.frame(t(b_hat_mco))
+for (i in 1:999) {
+  
+  Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+  names(Z) <- c("Y", "X1", "X2")
+  
+  linear_regression <- lm(Y~X1 + X2, data = Z)
+  bhats_DF[i+1,] <- linear_regression$coefficients
+}
+
+head(bhats_DF)
+tail(bhats_DF)
+```
+
+#### v) ¿Es $\frac{1}{1000}\sum_{i=1}^{1000}{\hat{b}_{MCO_i}}$ muy cercano al valor verdadero $\mathbf{b}$?
+
+> Los valores reales son:  
+
+```{r}
+b <- data.frame(t(b))
+names(b) <- c("b0", "b1", "b2")
+print.data.frame(b, row.names = F)
+```
+> Mientras que la media de $\hat{b}_{MCO_i}$ es:  
+
+```{r}
+colMeans(bhats_DF)
+```
+
+> Los valores son cercanos dado que los estimadores son insesgados.
+  
+
+#### vi) ¿Qué supuestos mínimos garantizan que el estimador $\hat{b}_{MCO}$ sea insesgado?
+
+> Los supuestos 1 a 3 que vimos en clase:  
+
+>  * S1: Los vectores aleatorios $\mathbf{Z}_i$ son iid  
+>  * S2: $Y = Xb + U$ y $\mathbb{E}[U|X]=0$, y  
+>  * S3: $X'X$ es invertible
+
+\newpage
+
+### 2. En este ejercicio, se ilustra que bajo ciertos supuestos el estimador de mínimos cuadrados ordinarios de $\sigma_u^2$ es *incondicionalmente insesgado*
+
+#### i) Generar (usando algún paquete econométrico) una muestra i.i.d.  
+
+$$
+\qquad \Biggl\{\begin{pmatrix}Y_i\\X_{1i}\\X_{2i}\end{pmatrix}\Bigg\}_{i=1}^{100}
+$$ donde $\begin{pmatrix}Y_i\\X_{1i}\\X_{2i}\end{pmatrix}\sim{N_3}\Biggl(\begin{pmatrix}1\\0\\2\end{pmatrix},\begin{pmatrix}0.8 & 0.4 & -0.2\\0.4 & 1.0 & -0.8\\-0.2 & -0.8 & 2.0\end{pmatrix}\Biggl)$
+
+```{r}
+rm(list = ls())
+n <- 100
+mu <- c(1,0,2)
+Sigma <- matrix(c(0.8, 0.4, -0.2,
+                  0.4, 1, -0.8,
+                  -0.2, -0.8, 2),
+                nrow = 3,
+                byrow = T)
+Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(Z) <- c("Y", "X1", "X2")
+```
+
+
+#### ii) Con los datos obtenidos en i), estimar por mínimos cuadrados ordinarios el modelo de regresión lineal:
+$$
+Y_i = b_0 + b_1X_{1i} + b_2X_{2i} + U_i
+$$ 
+
+con $i = 1, 2, \dots, 100$. Obtendiendo así el estimador $\hat{b}_{MCO} = \begin{pmatrix} \hat{b}_0 \\ \hat{b}_1 \\ \hat{b}_2 \end{pmatrix}$ y $\hat{\sigma}_u^2 = \frac{1}{n-k}\hat{U}'\hat{U}$
+    
+```{r}
+# estimador b_mco
+linear_regression <- lm(Y~X1 + X2, data = Z)
+b_hat_mco <- linear_regression$coefficients
+names(b_hat_mco) <- c("bhat0", "bhat1", "bhat2")
+b_hat_mco
+
+# estimador sigma_u
+Y <- Z$Y
+X <- cbind(rep(1,n),
+           Z[,-1])
+U <- Y - as.matrix(X)%*%as.matrix(b_hat_mco)
+k <- 3 #dimensión de los vectores aleatorios Z_i
+sigma_u_mco <- 1/(n-k)*(t(U)%*%U)
+sigma_u_mco
+```
+
+#### iii) Con los parámetros dados en i), encontrar el valor verdadero de $\sigma_u^2$
+
+> En clase se vio que si $\{U_j\}_{j=1}^n$ son independientes, entonces
+$$
+\sigma_u^2 = var(U_j) = \sigma_Y^2 - \Sigma_{YX}\Sigma_X^{-1}(\Sigma_{YX})'
+$$
+> Dado que los 100 vectores aleatorios $\mathbf{Z}$ que estimamos son i.i.d., podemos aplicar la fórmula
+
+```{r}
+sigma_y <- 0.8
+Sigma_YX <- matrix(c(0.4, -0.2), 
+                   nrow = 1)
+Sigma_X <- matrix(c(1, -0.8, -0.8, 2),
+                  byrow = T,
+                  nrow = 2)
+
+sigma_u <- sigma_y - Sigma_YX%*%solve(Sigma_X)%*%t(Sigma_YX)
+
+sigma_u
+```
+
+#### iv) Repetir 999 veces los pasos i) y ii) para obtener 1000 estimadores $\{\hat{\sigma}_{uMCO_i}^2\}_{i=1}^{1000}$ de $\sigma_u^2$
+
+```{r}
+for (i in 1:999) {
+  
+  Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+  names(Z) <- c("Y", "X1", "X2")
+  Y <- Z$Y
+  X <- cbind(rep(1,n),
+           Z[,-1])
+  
+  linear_regression <- lm(Y~X1 + X2, data = Z)
+  bhat <- linear_regression$coefficients
+  
+  U <- Y - as.matrix(X)%*%as.matrix(bhat)
+  k <- 3 #dimensión de los vectores aleatorios Z_i
+  sigma_u_mco <- rbind(sigma_u_mco,
+                       1/(1000-k)*(t(U)%*%U))
+}
+
+head(sigma_u_mco)
+tail(sigma_u_mco)
+```
+
+#### v) ¿Es $\frac{1}{1000}\sum_{i=1}^{1000}{\hat{\sigma}_{uMCO_i}^2}$ muy cercano al valor verdadero $\sigma_u^2$?
+
+> El valor real de $\sigma_u^2$ es:
+
+```{r}
+sigma_u
+```
+
+> Mientras que el promedio de los estimadores del experimento es:
+
+```{r}
+mean(sigma_u_mco)
+```
+
+> Son valores cercanos dado que los estimadores son insesgados.
+
+#### vi) ¿Qué supuestos mínimos garantizan que el estimador $\hat{\sigma}_{uMCO}^2$ sea insesgado?
+
+> Los supuestos 1 a 3 que vimos en clase y que mencionamos en el ejercicio anterior, más el supuesto 4:  
+
+>  * S4: $var(U|X)=\sigma_u^2\mathbb{I}_n$ (homocedasticidad condicional)
+
+\newpage
+
+### Los siguientes problemas están en Wooldridge, J.M, *Introductory Econometrics: A Modern Approach. 6th Edition. SOuth-Western. CENGAGE Learning*. Las bases de datos se encuentran en www.cengagebrain.com (como se indica en la página XV del prefacio del libro).
+
+```{r}
+library(wooldridge)
+```
+
+
+### 3. Problema 1, capítulo 2, pág. 53
+
+Let `kids` denote the number of children ever born to a woman, and let `educ` denote years of education for the woman. A simple model relating fertility to years of education is 
+$$
+kids = \beta_0 + \beta_1educ + u
+$$
+where $u$ is the unobserved error.  
+
+(i) What kinds of factors are contained in u? Are these likely to be correlated with level of education?  
+
+Existen variables que podrían o no estar relacionadas con la variable independiente asociada a la fertilidad `kids` o con la variable dependiente asociada a los años de educación `educ`. Al ser el modelo muy simple, es decir, un modelo que intenta explicar una variable compleja, como la fertilidad, en función de una única variable de índole más social, es probable que existan más factores no contenidos en el modelo, pero sí en $u$, que estén correlacionados con el nivel de educación.
+
+(ii) Will a simple regression analysis uncover the *ceteris paribus* effect of education on fertility?  
+Explain.
+Es posible que este modelo capture el efecto *ceteris paribus* siempre y cuandose restringa a que $\mathbb{E}[u|educ]=0$, lo que implicaría que $\mathbb{E}[kids|educ]=\beta_0 + \beta_1educ$. De otro modo, no sería posible capturar tal efecto.
+
+
+\newpage
+### 4. Problema 4, capítulo 2, pág. 54
+
+The data set `BWGHT` contains data on births to women in the United States. Two variables of interest are the dependent variable, infant birth weight in ounces (`bwght`), and an explanatory variable, average number of cigarettes the mother smoked per day during pregnancy (`cigs`). The following simple regression was estimated using data on $n$=1,388 births:
+$$
+\widehat{bwght} = 119.77 - 0.514*cigs
+$$
+(i) What is the predicted birth weight when $cigs=0$? What about when $cigs=20$ (one pack per day)? Comment on the difference.  
+
+ * Si $cigs=0$, entonces la predicción para el peso al nacer es $\left.\widehat{bwght}\right|_{cigs=0}=\underline{119.77}$
+ * Si Si $cigs=20$, entonces la predicción para el peso al nacer es $\left.\widehat{bwght}\right|_{cigs=0}=119.77 - 0.514(20)=119.77-10.28=\underline{109.49}$
+
+(ii) Does this simple regression necessarily capture a causal relationship between the child’s birth weight and the mother’s smoking habits? Explain.  
+
+Puede existir causalidad entre ambas variables, pero solamente captura una correlación entre éstas, considerando los supuestos vistos en clase.
+
+(iii) To predict a birth weight of 125 ounces, what would $cigs$ have to be? Comment.  
+
+Resolvamos:
+$$
+125 = 119.77 - 0.514*cigs \\
+0.514*cigs=119.77-125 \\
+cigs = -\frac{5.23}{0.514} \\
+cigs = \underline{-10.1751}
+$$
+Lo anterior implica que se necesitan fumar "menos" diez cigarrillos; algo que no tiene sentido.
+
+(iv) The proportion of women in the sample who do not smoke while pregnant is about .85. Does this help reconcile your finding from part (iii)?  
+
+Afecta, debido a que el modelo de regresión utiliza datos donde no hay varianza en el 85% de los datos, es decir, donde `cigs`=0. Para analizar el efecto entre las variables del modelo, sería más apropiado estimar una regresión en ese 15% de mujeres embarazadas que sí fuman, sin utilizar un intercepto. No obstante, el valor calculado en (iii) seguramente sería menor (mayor en términos absolutos), lo que es indicativo de que se requieren más variables para explicar el peso del recién nacido, y así obtener resultados más intuitivos que una cantidad de cigarros negativa. 
+
+\newpage
+### 5. Problema 6, capítulo 2, pág. 54
+
+Using data from 1988 for houses sold in Andover, Massachusetts, from Kiel and McClain (1995), the following equation relates housing price (`price`) to the distance from a recently built garbage incinerator (`dist`):
+$$
+\widehat{log(price)} = 9.40 + 0.312*log(dist)
+$$
+$$
+n = 135, \space R^2 = 0.162
+$$  
+(i) Interpret the coefficient on log(`dist`). Is the sign of this estimate what you expect it to be?  
+
+El coeficiente indica que el si la distancia de la casa a un incinerador construido recientemente se incrementa en un 1%, el valor de la casa incrementa un 32% en promedio. El signo del estimador coincide con lo que esperaríamos ver en la realidad, considerando que la demanda para casas ubicadas cerca de ambientes contaminantes es menor.
+
+(ii) Do you think simple regression provides an unbiased estimator of the *ceteris paribus* elasticity of `price` with respect to `dist`? (Think about the city’s decision on where to put the incinerator.)  
+
+Seguramente ninguna ciudad colocaría un incinerador cerca de una zona residencial. Mucho menos lo colocaría cerca de una zona residencial de alto valor, dado que sus pobladores tendrían quizás un mayor poder de negociación. Entonces, es posible que existan en $u$ variables correlacionadas con $dist$ que harían que no se cumpla que $\mathbb{E}[u|dist]=0$; es decir, no sería insesgado el estimador.
+
+(iii) What other factors about a house affect its price? Might these be correlated with distance from the incinerator?
+
+Factores que pudieran estar correlacionados con la distancia y que a su vez afecte el precio, es el nivel de ingresos promedio en la zona residencial donde se ubica la casa. Pensaríamos que entre mayor sea este nivel de ingresos, mayor es el precio de la casa (solamente los ricos viven en mansiones). Además, una zona con nivel de ingresos alto puede tener influencia en las decisiones de la ciudad, como por ejemplo en decidir dónde ubicar los incineradores.
+
+\newpage
+### 6. Problema 7, capítulo 2, pág. 54
+
+Consider the savings function
+$$
+sav = \beta_0 + \beta_1inc + u, \ \ \ \  u=\sqrt{inc}*e,
+$$
+where $e$ is a random variable with $\mathbb{E}[e]=0$ and $Var(e)=\sigma_e^2$. Assume that $e$ is independent of `inc`.  
+
+(i) Show that $\mathbb{E}[u|inc]=0$, so that the key zero conditional mean assumption (Assumption SLR.4) is satisfied. [Hint: If $e$ is independent of `inc`, then $\mathbb{E}[e|inc]=\mathbb{E}[e]$.]  
+$$
+\begin{aligned}
+\mathbb{E}[u|inc]  &= \mathbb{E}[\sqrt{inc}*e|inc] \\ 
+                   &= \sqrt{inc}*\mathbb{E}[e|inc] \\
+                   &= \sqrt{inc}*\mathbb{E}[e] \\
+                   &= \sqrt{inc}*0 \\
+                   &= 0 \ \ \  \blacksquare
+\end{aligned}
+$$
+
+(ii) Show that $Var[u|inc]=\sigma_e^2inc$, so that the homoskedasticity Assumption SLR.5 is violated. In particular, the variance of `sav` increases with `inc.` [Hint: $Var[e|inc]=Var[e]$ if $e$ and `inc` are independent.]  
+$$
+\begin{aligned}
+Var[u|inc]  &= Var[\sqrt{inc}*e|inc] \\ 
+            &= (\sqrt{inc})^2*Var[e|inc] \\
+            &= inc*Var[e] \\
+            &= inc*\sigma_e^2 \\
+            &= \sigma_e^2inc \ \ \  \blacksquare
+\end{aligned}
+$$
+
+(iii) Provide a discussion that supports the assumption that the variance of savings increases with family income.
+
+La idea de que los ahorros se vuelven más volátiles a medida que el ingreso familiar aumenta, puede explicarse si consideramos que, en el caso de los hogares con ingresos bajos, existen restricciones que limitan el uso de sus ingresos para fines distintos al consumo (casi todo su ingreso lo gastan en ello), lo que implicaría un ahorro bajo y constante. En cambio, a medida que los ingresos se incrementan, existe un sobrante que puede destinarse al ahorro, o a otros fines como la inversión y el consumo suntuoso; esto es, existe una discrecionalidad mayor respecto al uso del ingreso sobrante, que puede ahorrarse o no, lo que finalmente resulta en una varianción mayor del ahorro.
+
+\newpage
+### 7. Problema C6, capítulo 2, pág. 57
+
+We used the data in MEAP93 for Example 2.12. Now we want to explore the relationship between the math pass rate (`math10`) and spending per student (`expend`).  
+
+(i) Do you think each additional dollar spent has the same effect on the pass rate, or does a diminishing effect seem more appropriate? Explain.  
+
+Tendría sentido esperar retornos decrecientes en las tasas de aprobación por cada dólar gastado. A medida que el gasto por alumno incrementa, puede ser que ese gasto extra se destine a fines que contribuyan menos al rendimiento educativo del alumno, a diferencia del gasto realizado al comienzo, cuando se destina a elementos básicos como pupitres, libros, servicios, etc.
+
+(ii) In the population model
+$$
+math10 = \beta_0 + \beta_1log(expend) + u,
+$$
+argue that $\beta_1/10$ is the percentage point change in `math10` given a 10% increase in `expend.`  
+
+Es posible demostrar lo anterior con derivadas:
+$$
+\begin{aligned}
+\frac{\partial{math10}}{\partial{expend}} &= \frac{\beta_1}{expend} \\
+                \implies \partial{math10} &= \frac{\beta_1}{expend}\partial{expend} = \beta_1 \frac{\partial{expend}}{expend} \\
+                \\
+                \therefore \Delta{math10} &= \beta_1 \frac{\Delta{expend}}{expend} = \beta_1 \Delta{\%}expend
+\end{aligned}
+$$
+Entonces, con un incremento porcental del 10%:
+$$
+\Delta{math10} = \beta_1*10\% = \beta_1*\frac{1}{10} = \frac{\beta_1}{10} \ \ \ \blacksquare
+$$
+(iii) Use the data in MEAP93 to estimate the model from part (ii). Report the estimated equation in the usual way, including the sample size and *R*-squared.
+
+```{r}
+model_ii <- lm(math10 ~ log(expend), data = meap93)
+coefs <- model_ii$coefficients
+results <- summary(model_ii)
+results
+```
+
+Entonces, el modelo estimado es
+$$
+\widehat{math10} = `r round(coefs[1], 2)` + `r round(coefs[2], 2)`*log(expend)
+$$
+El tamaño de la muestra es `r nrow(model.frame(model_ii))` y además, $R^2=`r results$r.squared`$
+
+(iv) How big is the estimated spending effect? Namely, if spending increases by 10%, what is the estimated percentage point increase in `math10`?  
+
+El efecto sería
+$$
+\left.\Delta{\widehat{math10}}\right|_{\beta_1=\hat{\beta}_1} = \frac{\hat{\beta_1}}{10} = \frac{11.16}{10} = `r coefs[2]/10`
+$$
+
+(v) One might worry that regression analysis can produce fitted values for `math10` that are greater than 100. Why is this not much of a worry in this data set?
+
+Analicemos lo que debería ocurrir con `expend` si el estimado para `math10` fuera mayor a 100:
+$$
+\begin{aligned}
+\widehat{math10}>100 &\implies `r round(coefs[1], 2)` + `r round(coefs[2], 2)`*log(expend) > 100 \\
+                     &\implies log(expend) > \frac{100 + `r -round(coefs[1], 2)` }{`r round(coefs[2], 2)`} \\
+                     &\implies expend > e^{\frac{100 + `r -round(coefs[1], 2)` }{`r round(coefs[2], 2)`}} \\
+                     &\implies expend > `r exp((100-coefs[1])/coefs[2])`
+\end{aligned}
+$$
+Es decir, la variable de gasto por estudiante (`expend`) tendría que ser mayor a 3,866,869... y en esta base de datos, la más 7,419. Por lo tanto, no puede ocurrir que el estimado sea mayor a 100.
+\newpage
+
+### 8. Problema C9, capítulo 2, pág. 58
+
+Use the data in COUNTYMURDERS to answer this questions. Use only the data for 1996.  
+
+(i) How many counties had zero murders in 1996? How many counties had at least one execution? What is the largest number of executions?  
+
+Número de condados con cero muertes en 1996: 1051
+```{r}
+library(dplyr)
+countymurders %>% 
+  filter(year == 1996) %>% 
+  filter(murders == 0) %>% 
+  distinct(countyid) %>% 
+  count()
+```
+
+Número de condados con al menos una ejecución en 1996: 31
+```{r}
+countymurders %>% 
+  filter(year == 1996) %>% 
+  filter(execs>0) %>% 
+  distinct(countyid) %>% 
+  count()
+```
+
+Número más grande de ejecuciones (en 1996): 3
+```{r}
+countymurders %>% 
+  filter(year == 1996) %>% 
+  filter(execs == max(execs))
+```
+
+
+(ii) Estimate the equation
+$$
+murders = \beta_0 + \beta_1execs + u
+$$
+by OLS and report the results in the usual way, including sample size and *R*-squared.  
+```{r}
+murders_96 <- countymurders %>% 
+  filter(year == 1996)
+model_murders <- lm(murders ~ execs, data = murders_96)
+summary(model_murders)
+```
+
+
+(iii) Interpret the slope coefficient reported in part (ii). Does the estimated equation suggest a deterrent effect of capital punishment?  
+
+Aparentemente, en el año 1996, en promedio, cuando se realizaba una ejecución, ocurrieron aproximadamente 58-59 asesinatos. Esto parecería sugerir que la pena capital está altamente correlacionada con los asesinatos.
+
+(iv) What is the smallest number of murders that can be predicted by the equation? What is the residual for a county with zero executions and zero murders?  
+
+Redondeando, el número más pequeño de asesinatos es `r round(model_murders$coefficients[1])`. El residuo para un condado con cero ejecuciones y cero muertes, es precisamente `r -round(model_murders$coefficients[1])`.
+
+(v) Explain why a simple regression analysis is not well suited for determining whether capital punishment has a deterrent effect on murders.
+
+Sencillamente porque es difícil explicar un fenómeno tan complejo como los asesinatos con tan solo una variable explicativa, dado que es posible que se omita el efecto de muchas otras variables. Sugerir que la pena capital tiene un pernicioso sobre el número de asesinatos pasa por alto el hecho de que precisamente en condados donde ocurren muchos asesinatos, es que posiblemente se aplica la pena capital con mayor frecuencia; es decir, la causalidad podría ser al revés.

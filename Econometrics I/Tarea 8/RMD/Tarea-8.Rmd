@@ -1,0 +1,177 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath"]
+header-includes:
+    - \usepackage{setspace}
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+set.seed(5)
+```
+
+Usaremos la librería `mvtnorm` para generar los datos; específicamente la función `rmvt`.
+
+```{r}
+library(mvtnorm)
+n <- 120
+medias <- c(1,0)
+df <- 3
+Sigma <- matrix(c(1.64, -0.8, -0.8, 1), ncol = 2)*((df-2)/df)
+Z <- rep(medias, each = n) + rmvt(n, sigma = Sigma, df = 3)
+Z <- data.frame(Z)
+names(Z) <- c("Y", "X")
+```
+
+Comprobamos las medias de los datos muestreados:
+```{r}
+round(colMeans(Z), 2)
+```
+Y la varianza:
+```{r}
+round(var(Z), 2)
+```
+
+Dada la reducida muestra, los parámetros calculados pueden no ser iguales a los especificados, pero se deben asemejar, como puede verse.
+
+La curva de regresión es: $g(X)=1-\frac{4}{5}X$
+
+```{r}
+g <- 1-(4/5)*Z$X
+```
+
+Graficando los datos simulados y la curva de regresión:
+
+```{r}
+library(ggplot2)
+datos <- data.frame(Z, g)
+names(datos)[3] <- c("g")
+ggplot(data = datos) +
+  geom_point(aes(x = X, y = Y),
+             size = 0.6) +
+  geom_line(aes(x = X, y = g),
+            col = "red") +
+  theme_light()
+```
+
+\newpage
+
+Generemos los datos de la distribución utilizando la siguiente función, basada en la idea de que $X$ sigue una distribución exponencial y que $Y|X$ sigue una distribución gamma. Se sigue la siguiente estrategia para muestrear^[Basado en https://stackoverflow.com/questions/71176416/how-to-simulate-data-from-gumbel-bivariate-exponential-distribution]:
+
+1. Muestreamos $X$ de una distribución exponencial.
+2. Muestreamos $Y$ condicionada en $X$
+
+Entonces, para el caso donde $\lambda=0.5$
+```{r}
+rGBVE <- function(n, alpha1, alpha2, lambda) {
+  x1 <- rexp(n, alpha1)
+  alpha12 <- alpha1*alpha2
+  pprod <- alpha12*lambda
+  C <- exp(alpha1*x1)
+  A <- (alpha12 - pprod + pprod*alpha1*x1)/C
+  B <- (pprod*alpha2 + pprod^2*x1)/C
+  D <- alpha2 + pprod*x1
+  wExp <- A/D
+  wGamma <- B/D^2
+  data.frame(x1, x2 = rgamma(n, (runif(n) > wExp/(wExp + wGamma)) + 1, D))
+}
+
+n <- 120
+lmda <- 0.5
+Z <- rGBVE(n = n, alpha1 = 1, alpha2 = 1, lambda = lmda)
+names(Z) <- c("X", "Y")
+```
+
+La gráfica de los datos contra su regresión es:
+
+```{r}
+g <- function(x, lambda) {
+  (1+lambda+lambda*x)/(1+lambda*x)^2
+}
+datos <- data.frame(Z, g(Z$X, lambda = lmda))
+names(datos) <- c("X", "Y", "g")
+ggplot(data = datos) +
+  geom_point(aes(x = X, y = Y),
+             size = 0.6) +
+  geom_line(aes(x = X, y = g),
+            col = "red") +
+  theme_light()
+```
+\newpage
+\onehalfspacing
+Generar 30 observaciones i.i.d. $\Biggl\{\begin{pmatrix}X_{i1}\\X_{i2}\\V_i\end{pmatrix}\Biggl\}_{i=1}^{30}$ donde $\begin{pmatrix}X_{i1}\\X_{i2}\\V_i\end{pmatrix}\sim{N_3}\Biggl(\begin{pmatrix}1\\2\\0\end{pmatrix},\begin{pmatrix}0.04 & -0.03 & 0\\-0.03 & 0.09 & 0.01\\0 & 0.01 & 0.01\end{pmatrix}\Biggl)$  
+
+```{r}
+n <- 30
+medias <- c(1,2,0)
+Sigma <- matrix(c(0.04, -0.03, 0, -0.03, 0.09, 0.01, 0, 0.01, 0.01), ncol = 3)
+Z <- rmvnorm(n, mean = medias, sigma = Sigma)
+Z <- data.frame(Z)
+names(Z) <- c("X1", "X2", "V")
+```
+
+Podemos ver que la media de los datos muestreados se asemeja a la especificada:
+
+```{r}
+round(colMeans(Z), 2)
+```
+
+Y su matriz de varianza-covarianza:
+
+```{r}
+round(var(Z), 3)
+```
+
+Generar  
+
+|       $Y_i = e^{X_{i1}} - sen(X_{2i}) + V_i$ $i=1,2,\dots,30$  
+
+```{r}
+Y <- exp(Z$X1) - sin(Z$X2) + Z$V
+```
+
+
+Para explicar la variable $Y$ en función de las variables explicativas $X_1$ y $X_2$ se propone el "modelo":  
+
+|       $Y_i=10+\pi X_{i1}+eX_{i2} + U_i$, con $i=1,2,\dots,30$  
+
+```{r}
+g1 <- 10 + pi*Z$X1 + exp(1)*Z$X2
+U <- Y - g1
+Ymodel1 <- g1+U
+```
+
+
+¿Se cumple este modelo? (i.e. ¿Se satisfacen las 30 ecuaciones con los datos)
+
+La respuesta a esta pregunta es **sí**, debido a que, a pesar de que quizás no es el mejor modelo, existen $U_1, U_2, U_3, \dots, ... , U_{30}$ tales que hacen que se cumplan las 30 ecuaciones del vector `Ymodel1`, es decir, ocurre que $Y_i$=`Ymodel1`_i $\forall i\in\{1, 2,\dots,30\}$
+```{r}
+data.frame(Y,Ymodel1,g1,U)
+```
+
+Se propone un segundo modelo:
+
+|       $Y_i=13+3X_{i1}+2024X_{i2} + \epsilon_i$, con $i=1,2,\dots,30$
+
+```{r}
+g2 <- 13 + 3*Z$X1 + 2024*Z$X2
+epsilon <- Y - g2
+Ymodel2 <- g2+epsilon
+```
+
+¿Se cumple este modelo? (i.e. ¿Se satisfacen las 30 ecuaciones con los datos)
+
+La respuesta es nuevamente **sí**, por la misma razón que el modelo anterior: existen $\epsilon_1, \epsilon_2, \dots, \epsilon_{30}$ que hacen que las 30 ecuaciones se cumplan; es decir, ocurre que $Y_i$=`Ymodel2`_i $\forall i\in\{1, 2,\dots,30\}$:
+```{r}
+data.frame(Y, Ymodel2, g2, epsilon)
+```
+

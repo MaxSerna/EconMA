@@ -1,0 +1,232 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb", "mathtools"]
+    dev: cairo_pdf
+    latex_engine: xelatex
+mainfont: "Courier"
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+```
+
+### i) Generar una muestra i.i.d. 
+$\begin{Bmatrix}\begin{pmatrix} X_{1i} \\ X_{2i} \\ X_{3i} \end{pmatrix}\end{Bmatrix}_{i=1}^{500}$ donde $\begin{pmatrix} X_{1i} \\ X_{2i} \\ X_{3i} \end{pmatrix} \sim{N_3} \begin{pmatrix} \begin{pmatrix} 1\\ 0\\ 2 \end{pmatrix}, \begin{pmatrix} 0.8 & 0.4 & -0.2\\ 0.4 & 1.0 & -0.8 \\ -0.2 & -0.8 & 2.0 \end{pmatrix}\end{pmatrix}$.
+
+```{r, warning=FALSE}
+library(mvtnorm)
+set.seed(6)
+rm(list = ls())
+
+n <- 500
+mu <- c(1, 0, 2)
+Sigma <- matrix(c(0.8, 0.4, -0.2,
+                  0.4, 1, -0.8,
+                  -0.2, -0.8, 2),
+                nrow = 3,
+                byrow = T)
+Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(Z) <- c("X_1", "X_2", "X_3")
+
+Z <- as.matrix(Z)
+X <- cbind(1, Z[,-1])
+
+n <- nrow(Z)
+k <- ncol(Z)
+```
+
+
+\onehalfspacing
+
+### ii) Generar una muestra $\{U_i\}_{i=1}^{500}$ de v.a.s i.i.d. con $E(U_i) = 0$, tal que $U_i$ y el vector aleatorio $\begin{pmatrix} X_{1j} & X_{2j} & X_{3j} \end{pmatrix}$ sean independientes $\forall i \neq j$, $i, j \in \{1, 2, \ldots, 500\}$. Usar cualquier distribución para $U_i$ que se quiera siempre y cuando \textbf{no} sea Normal.
+
+```{r}
+U <- rlogis(n, scale = 3)
+```
+
+### iii) Usando los datos obtenidos en i) y ii), generar la muestra $\{Y_i\}_{i=1}^500$ donde 
+$$
+Y_i = -1 + 2.5X_{1i} - 2X_{2i} + 3X_{3i} + U_i, \quad i = 1, 2, \dots, 500
+$$
+```{r}
+Y <- -1 + 2.5*Z[,1] - 2*Z[,2] + 3*Z[,3] + U
+```
+
+### iv) Con los datos obtenidos en i) y iii), estimar por mínimos cuadrados ordinarios el modelo de regresión lineal
+$$
+Y_i = b_1 + b_2X_{1i} + b_3X_{2i} + b_4X_{3i} + U_i, \quad i = 1, 2, \dots, 500
+$$
+```{r, results='asis'}
+regresion <- lm(Y~X_1 + X_2 + X_3, data = data.frame(Y, Z))
+print(xtable::xtable(summary(regresion), digits = 6), comment = FALSE)
+```
+### v) Encontrar un intervalo de confianza de $b_2$ con nivel de confianza de 90% (aproximadamente)
+
+\begin{itemize}
+  \item[a)] Sin suponer homocedasticidad
+\end{itemize}
+
+Podemos utilizar el pivote
+$$
+\dfrac{c'\hat{b_n} - c'b}{\sqrt{c'\frac{1}{n}\hat{V_n}c}} \xrightarrow{\enskip D\enskip} N(0,1)
+$$
+donde $c=\begin{pmatrix} 0 & 1 & 0 & 0 \end{pmatrix}$ y $\hat{V_n} = (\frac{1}{n}X'X)^{-1} (\frac{1}{n}\sum_{j=1}^{n} U_j^2x_jx_j') (\frac{1}{n}X'X)^{-1}$
+
+Por tanto, con un $\alpha=10\%$, existe un cuantil $q$ de la normal estándar tal que
+$$
+\begin{aligned}
+  \mathbb{P}\Bigg[ -q < \dfrac{c'\hat{b_n} - c'b}{\sqrt{c'\frac{1}{n}\hat{V_n}c}} < q \Bigg] = 0.9
+  &\iff
+  \mathbb{P}\Bigg[ -q\sqrt{c'\frac{1}{n}\hat{V_n}c} < c'\hat{b_n} - c'b< q\sqrt{c'\frac{1}{n}\hat{V_n}c} \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ - \Big(c'\hat{b_n} + q\sqrt{c'\frac{1}{n}\hat{V_n}c}\Big) <  - c'b < - \Big(c'\hat{b_n} - q\sqrt{c'\frac{1}{n}\hat{V_n}c}\Big) \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ c'\hat{b_n} + q\sqrt{c'\frac{1}{n}\hat{V_n}c} > c'b > c'\hat{b_n} - q\sqrt{c'\frac{1}{n}\hat{V_n}c} \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ c'\hat{b_n} - q\sqrt{c'\frac{1}{n}\hat{V_n}c} < c'b < c'\hat{b_n} + q\sqrt{c'\frac{1}{n}\hat{V_n}c} \Bigg] = 0.9 \\
+  &\iff
+  \mathbb{P}\Bigg[ \hat{b_{n_2}} - q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}} < b_2 < \hat{b_{n_2}} + q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}} \Bigg] = 0.9
+\end{aligned}
+$$
+El intervalo de confianza entonces es
+$$
+\Bigg(\hat{b_{n_2}} - q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}} \ \ \ , \ \ \ \hat{b_{n_2}} + q\sqrt{\frac{1}{n}\hat{V_{n_{22}}}}\Bigg)
+$$
+Donde $\hat{V_{n_{22}}} = (\frac{1}{n}X'X)^{-1} (\frac{1}{n}\sum_{j=1}^{n} U_j^2x_jx_j') (\frac{1}{n}X'X)^{-1}_{22}$
+
+Podemos calcularlo:
+```{r}
+alpha <- 0.1
+b_hat_2 <- regresion$coefficients[2]
+q <- qnorm(p = alpha/2, lower.tail = F)
+X <- as.matrix(cbind(1, Z))
+XX <- t(X)%*%X
+Uj.sq <- regresion$residuals^2
+suma_Uj.sq_xj_xj <- matrix(rep(0, 4), nrow = 4, ncol = 4)
+for (j in 1:n) {
+  suma_Uj.sq_xj_xj <- suma_Uj.sq_xj_xj + Uj.sq[j]*X[j,]%*%t(X[j,])
+}
+mean_Uj.sq_xj_xj <- (1/n)*suma_Uj.sq_xj_xj
+V_hat_hetero <- solve(1/n*XX)%*%mean_Uj.sq_xj_xj%*%solve(1/n*XX)
+V_hat_22_hetero <- V_hat_hetero[2,2]
+V_hat_hetero
+
+CI_het <- c(b_hat_2 - q*sqrt(V_hat_22_hetero/n),
+        b_hat_2 + q*sqrt(V_hat_22_hetero/n))
+CI_het
+```
+Es decir, el intervalo de confianza para $b_2$ \underline{sin suponer homocedasticidad} es:
+$$
+\Big(`r CI_het[1]` , \ \ \ `r CI_het[2]`\Big)
+$$
+\begin{itemize}
+  \item[b)] Suponiendo homocedasticidad
+\end{itemize}
+El intervalo de confianza sigue siendo el mismo, con la diferencia de que ahora $\hat{V_{n_{22}}} = \hat{\sigma}_u^2(\frac{1}{n}X'X)^{-1}_{22}$.
+Calculando:
+```{r}
+var.residual <- summary(regresion)$sigma^2
+V_hat_homo <- var.residual*solve(1/n*XX)
+V_hat_22_homo <- V_hat_homo[2,2]
+V_hat_homo
+
+CI_homo <- c(b_hat_2 - q*sqrt(V_hat_22_homo/n),
+             b_hat_2 + q*sqrt(V_hat_22_homo/n))
+CI_homo
+```
+Es decir, el intervalo de confianza para $b_2$ \underline{suponiendo homocedasticidad} es:
+$$
+\Big(`r CI_homo[1]` , \ \ \ `r CI_homo[2]`\Big)
+$$
+
+### v) Encontrar un intervalo de confianza de $b_1 - 3b_2$ con nivel de confianza de 95% (aproximadamente)
+
+\begin{itemize}
+  \item[a)] Sin suponer homocedasticidad
+\end{itemize}
+
+En este caso requerimos un pivote que nos permita considerar formas no lineales de $b$; podemos utilizar el siguiente:
+$$
+\dfrac{g(\hat{b_n}) - g(b)}{\sqrt{\frac{\partial{g(\hat{b_n})}}{\partial{\hat{b_n}}}\frac{1}{n}\hat{V_n}\frac{\partial{g(\hat{b_n})}}{\partial{\hat{b_n}}}'}} \xrightarrow{\enskip D\enskip} N(0,1)
+$$
+
+Donde $g(\hat{b_n}) = b_1 - 3b_2$, $\frac{\partial{g(\hat{b_n})}}{\partial{\hat{b_n}}} = \begin{pmatrix} 1 & -3 & 0 & 0\end{pmatrix}$ y $\hat{V_n} = (\frac{1}{n}X'X)^{-1} (\frac{1}{n}\sum_{j=1}^{n} U_j^2x_jx_j') (\frac{1}{n}X'X)^{-1}$. Dado esto, el denominador del pivote se convierte en:
+
+$$
+\begin{aligned}
+  (1,-3,0,0)\frac{1}{n}\hat{V_n}\begin{pmatrix} 1 \\ -3 \\ 0 \\ 0\end{pmatrix}
+  &\iff
+  \frac{1}{n} \begin{pmatrix} \hat{V}_{n_{11}} - 3\hat{V}_{n_{12}}, & \hat{V}_{n_{12}} - 3\hat{V}_{n_{22}}, & \hat{V}_{n_{13}} - 3\hat{V}_{n_{23}}, & \hat{V}_{n_{14}} - 3\hat{V}_{n_{24}}\end{pmatrix} \begin{pmatrix} 1 \\ -3 \\ 0 \\ 0\end{pmatrix} \\
+  &\iff
+  \frac{1}{n} \Big(\hat{V}_{n_{11}} - 3\hat{V}_{n_{12}} -3(\hat{V}_{n_{12}} - 3\hat{V}_{n_{22}})\Big) \\
+  &\iff
+  \frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)
+\end{aligned}
+$$
+El pivote entonces es:
+$$
+\dfrac{g(\hat{b_n}) - g(b)}{\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}} \xrightarrow{\enskip D\enskip} N(0,1)
+$$
+
+Por tanto, con un $\alpha=5\%$, existe un cuantil $q$ de la normal estándar tal que
+$$
+\begin{aligned}
+  &\mathbb{P}\Bigg[ -q < \dfrac{g(\hat{b_n}) - g(b)}{\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}} < q \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ -q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} < g(\hat{b_n}) - g(b) < q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ - \Bigg(g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}\Bigg) <  - g(b) < - \Bigg(g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}\Bigg) \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} > g(b) > g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \Bigg] = 0.95 \\
+  &\iff
+  \mathbb{P}\Bigg[ g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} < g(b) < g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \Bigg] = 0.95
+\end{aligned}
+$$
+El intervalo de confianza entonces es
+$$
+\Bigg(g(\hat{b_n}) - q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)} \ \ \ , \ \ \ g(\hat{b_n}) + q\sqrt{\frac{1}{n} \Big(\hat{V}_{n_{11}} - 6\hat{V}_{n_{12}} + 9\hat{V}_{n_{22}}\Big)}\Bigg)
+$$
+Calculando
+```{r}
+g_b_hat <- regresion$coefficients[1] - 3*regresion$coefficients[2]
+alpha <- 0.05
+q <- qnorm(p = alpha/2, lower.tail = F)
+
+CI_het2 <- c(g_b_hat - q*sqrt(1/n * (V_hat_hetero[1,1] - 6*V_hat_hetero[1,2] + 9*V_hat_hetero[2,2])),
+        g_b_hat + q*sqrt(1/n * (V_hat_hetero[1,1] - 6*V_hat_hetero[1,2] + 9*V_hat_hetero[2,2])))
+CI_het2
+```
+Es decir, el intervalo de confianza para $b_1 - 3b_2$ \underline{sin suponer homocedasticidad} es:
+$$
+\Big(`r CI_het2[1]` , \ \ \ `r CI_het2[2]`\Big)
+$$
+\begin{itemize}
+  \item[b)] Suponiendo homocedasticidad
+\end{itemize}
+
+El intervalo de confianza sigue siendo el mismo, con la diferencia de que ahora $\hat{V_n} = \hat{\sigma}_u^2(\frac{1}{n}X'X)^{-1}$.
+Calculando:
+```{r}
+CI_homo2 <- c(g_b_hat - q*sqrt(1/n * (V_hat_homo[1,1] - 6*V_hat_homo[1,2] + 9*V_hat_homo[2,2])),
+        g_b_hat + q*sqrt(1/n * (V_hat_homo[1,1] - 6*V_hat_homo[1,2] + 9*V_hat_homo[2,2])))
+CI_homo2
+```
+Es decir, el intervalo de confianza para $b_1 - 3b_2$ \underline{suponiendo homocedasticidad} es:
+$$
+\Big(`r CI_homo2[1]` , \ \ \ `r CI_homo2[2]`\Big)
+$$

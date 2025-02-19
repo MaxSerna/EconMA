@@ -1,0 +1,346 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb"]
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+set.seed(1)
+```
+
+### 3. Greene, William, H. *Econometric Analysis, Seventh Edition.* Prentice Hall, 2012. Application 2, Page 106. Datos: pages.stern.nyu.edu/~wgreene/Text/Edition7/TableF4-4.txt.  
+Christensen and Greene ( 1976) estimaron una función de costo Cobb-Douglas generalizada para la generación de electricidad de la forma
+$$
+\ln{C} = \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{P_k} + \delta_l \ln{P_l} + \delta_f \ln{P_f} + \varepsilon
+$$
+$P_k$, $P_l$ y $P_f$ son los precios de una unidad de capital, trabajo, y combustible, respecitvamente. $Q$ es la cantidad producida y $C$ el costo total.
+$$
+b = \begin{pmatrix}
+      \alpha \\
+      \beta \\
+      \gamma \\
+      \delta_k \\
+      \delta_l \\
+      \delta_f
+    \end{pmatrix}
+$$
+Para cumplir con la teoría de producción empleada, es necesario imponer la restricción de que la función de costo es homogenea de grado uno en los precios:
+$$
+\delta_k + \delta_l + \delta_f = 1
+$$
+```{r, results='asis'}
+datos <- read.table("https://pages.stern.nyu.edu/~wgreene/Text/Edition7/TableF4-4.txt",
+                    skip = 1,
+                    header = T)
+stargazer(datos, header = F,
+          title = "Datos en Christensen and Greene (1976)")
+```
+#### i) Obtener el estimador de MCO, $\hat{b}_{MCU}$ ignorando la restriccion.
+\hfill
+```{r, results='asis'}
+# variables a las que aplicaremos logaritmo natural
+my_variables <- c("cost", "q", "pk", "pl", "pf")
+
+# aplicamos logaritmos y unimos a la base de datos
+logs <- sapply(datos[my_variables], log)
+colnames(logs) <- paste("ln", my_variables, sep = "_")
+datos <- cbind(datos, logs)
+datos$ln_q.sq <- 1/2*datos$ln_q^2
+
+# estimamos mínimos cuadrados
+u_model <- lm(ln_cost ~ ln_q + ln_q.sq + ln_pk + ln_pl + ln_pf,
+              data = datos)
+
+parametros <- c("$\\hat{\\alpha}_{MCU}$", "$\\hat{\\beta}_{MCU}$",
+                "$\\hat{\\gamma}_{MCU}$","$\\hat{\\delta_k}_{MCU}$",
+                "$\\hat{\\delta_l}_{MCU}$", "$\\hat{\\delta_f}_{MCU}$")
+
+stargazer(u_model, header = F, title = "Modelo no restringido", no.space = TRUE,
+          covariate.labels = c(parametros[-1], parametros[1]),
+          dep.var.labels = "$\\ln{C}$")
+```
+#### ii) Obtener el estimador de MCO restringido $\hat{b}_{MCR}$ con los comandos del paquete estadístico que se esté utilizando.
+\hfill
+Podemos utilizar la librería de nombre `pracma`; requerimos especificar la restricción en la forma $Rb=r$. Sabemos que: $R = \begin{pmatrix} 0 & 0 & 0 & 1 & 1 & 1 \end{pmatrix}_{1\times6}$ y $r=1$.  El código para generar los estimadores restringidos es:
+```{r}
+# R
+R <- matrix(data = c(0,0,0,1,1,1), nrow = 1)
+
+# r
+r <- 1
+
+regresoras <- c("ln_q", "ln_q.sq", "ln_pk", "ln_pl", "ln_pf")
+
+# Construimos la matrix X de dim nxk
+X <- cbind(1, datos[regresoras])
+names(X)[1] <- "1s"
+X <- as.matrix(X)
+
+#estimamos
+coefs_restringidos <- pracma::lsqlincon(X, datos$ln_cost, Aeq =  R, beq =  r)
+
+matrix(coefs_restringidos,
+       dimnames = list(c("intercepto", regresoras), "estimadores"))
+```
+#### iii) Obtener el estimador de MCO restringido $\hat{b}_{MCR}$ con la fórmula:
+$$
+\hat{b}_{MCR} = \hat{b}_{MCU} - (X'X)^{-1}R'\bigr[R(X'X)^{-1}R'\bigr]^{-1}(R\hat{b}_{MCU}-r)
+$$
+
+El siguiente código calcula los estimadores restringidos:
+```{r, results='asis', warning=FALSE}
+library(xtable)
+
+#b_mcu
+b_mcu <- as.matrix(u_model$coefficients)
+
+# estimamos b_mcr
+b_mcr <- b_mcu - solve(t(X)%*%X)%*%t(R)%*%solve(R%*%solve(t(X)%*%X)%*%t(R))%*%(R%*%b_mcu-r)
+
+# presentamos en una tabla
+rownames(b_mcr) <- gsub("MCU", "MCR", parametros)
+b_mcr <- as.data.frame(b_mcr)
+names(b_mcr) <- "Valor"
+print(xtable(b_mcr, digits = 8),
+      sanitize.text.function=function(x){x},
+      comment = F)
+```
+#### iv) Verificar con los datos obtenidos:
+
+##### a) $\hat{U}_{MCR} = \hat{U}_{MCU} - X(\hat{b}_{MCR} - \hat{b}_{MCU})$  
+\hfill
+Reordenemos y probemos lo siguiente: $\hat{U}_{MCR} - \bigg (\hat{U}_{MCU} - X(\hat{b}_{MCR} - \hat{b}_{MCU}) \bigg) = 0$, recordando que $$\hat{U}_{MCR} \equiv Y - X\hat{b}_{MCR}$$
+```{r}
+b_mcr <- as.matrix(b_mcr)
+U_mcr <- as.matrix(datos$ln_cost - X%*%b_mcr)
+U_mcu <- as.matrix(resid(u_model))
+
+#lado derecho de la igualdad
+B <- U_mcu - X%*%(b_mcr - b_mcu)
+
+head(round(U_mcr - B, 10))
+tail(round(U_mcr - B, 10))
+
+all(U_mcr - B<0.00000000000001)
+```
+##### b) $\hat{U'}_{MCR} \hat{U}_{MCR} - \hat{U'}_{MCU} \hat{U}_{MCU} = (\hat{b}_{MCR} - \hat{b}_{MCU})'X'X(\hat{b}_{MCR} - \hat{b}_{MCU})$.  
+\hfill
+```{r}
+
+# lado izquierdo de la igualdad
+A <- t(U_mcr)%*%U_mcr - t(U_mcu)%*%U_mcu
+
+# lado derecho de la igualdad
+B <- t(b_mcr - b_mcu)%*%t(X)%*%X%*%(b_mcr - b_mcu)
+
+# comprobamos que A = B
+abs(A - B) < 0.0000000000001
+```
+##### c) $\hat{U'}_{MCR} \hat{U}_{MCR} - \hat{U'}_{MCU} \hat{U}_{MCU} = (R\hat{b}_{MCU} - r)'\bigr[R(X'X)^{-1}R'\bigr]^{-1}(R\hat{b}_{MCU} - r)$  
+\hfill
+```{r}
+# lado derecho de la igualdad
+B <- t(R%*%b_mcu - r)%*%solve(R%*%solve(t(X)%*%X)%*%t(R))%*%(R%*%b_mcu-r)
+
+# comprobamos que A = B (se calculó A en inciso anterior)
+abs(A - B) < 0.0000000000001
+```
+#### v) Obtener el estimador de MCO restringido $\hat{b}_{MCR}$ insertando la restricción $\delta_f = 1 - \delta_k - \delta_l$ en la ecuación original para estimar por MCO la regresión:
+$$
+\ln{\frac{C}{P_f}} = \alpha + \beta \ln{Q} + \gamma \biggr[\frac{1}{2}(\ln{Q)^2}\biggr] + \delta_k \ln{\frac{P_k}{P_f}} + \delta_l \ln{\frac{P_l}{P_f}} + \varepsilon
+$$
+Desarrollamos:
+$$
+\begin{aligned}
+\ln{C} &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{P_k} + \delta_l \ln{P_l} + \underline{\delta_f} \ln{P_f} + \varepsilon \\
+       &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{P_k} + \delta_l \ln{P_l} + \underline{(1 - \delta_k - \delta_l)} \ln{P_f} + \varepsilon \\
+       &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{P_k} + \delta_l \ln{P_l} + \underline{\ln{P_f} - \delta_k \ln{P_f} - \delta_l \ln{P_f}} + \varepsilon 
+\end{aligned}
+$$
+Reagrupamos términos:
+$$
+\begin{aligned}
+\ln{C} &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k (\ln{P_k} - \ln{P_f}) + \delta_l (\ln{P_l} - \ln{P_f}) + \ln{P_f} + \varepsilon \\
+       &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{\frac{P_k}{P_f}} + \delta_l \ln{\frac{P_l}{P_f}} + \ln{P_f} + \varepsilon \\
+\implies \ln{C} - \ln{P_f} &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{\frac{P_k}{P_f}} + \delta_l \ln{\frac{P_l}{P_f}} + \varepsilon \\
+\therefore \ln{\frac{C}{P_f}} &= \alpha + \beta \ln{Q} +\gamma \Biggr[ \frac{1}{2} (\ln{Q})^2 \Biggr] + \delta_k \ln{\frac{P_k}{P_f}} + \delta_l \ln{\frac{P_l}{P_f}} + \varepsilon
+\end{aligned}
+$$
+Estimamos por MCO:  
+
+(siguiente página)
+\newpage
+```{r, results='asis'}
+r_model_MCO <- lm(I(log(cost/pf)) ~ ln_q + ln_q.sq + I(log(pk/pf)) + I(log(pl/pf)),
+                  data = datos)
+
+stargazer(r_model_MCO, header = F,
+          covariate.labels = c(gsub("MCU", "MCR", parametros)[c(-1,-6)],
+                               gsub("MCU", "MCR", parametros)[1]),
+          dep.var.labels = "$\\ln{C/P_F}$",
+          title = "Modelo con restricción estimado por MCO",
+          no.space = T
+          )
+```
+\newpage
+
+#### ii) Generar (usando algún paquete econométrico) una muestra i.i.d. $\{X_i\}_{i=1}^{10} \sim N(\mu, 0.04)$, donde $\mu = -1.2$  
+\hfill
+```{r}
+n <- 10
+mu <- -1.2
+sigma <- 0.04
+muestra <- rnorm(n = n, mean = mu, sd = sqrt(sigma))
+```
+#### iii) Con los datos $\{X_i\}_{i=1}^{10}$ obtenidos en ii), encontrar el intervalo de confianza de $\mu$, obtenido en i), con nivel de confianza del 90\%. ¿Se encuentra -1.2 dentro de este intervalo?
+\hfill
+Necesitamos unos $q_1$ y $q_2$ tales que la probabilidad sea del 90%, es decir, que el área bajo la curva sea de 0.9.
+```{r}
+# 6% de la probabilidad
+alpha1 <- 0.06
+q1 <- qnorm(alpha1)
+
+# 4% de la probabilidad
+alpha2 <- .1 - alpha1
+q2 <- -qnorm(alpha2)
+
+c(q1, q2)
+```
+Por tanto, dado que el intervalo de confianza calculado en i) es $\big(\overline{X}_{10} - \sqrt{\frac{1}{250}}q_2, \ \overline{X}_{10} - \sqrt{\frac{1}{250}}q_1\big)$, el intervalo con los valores elegidos de $q_1$ y $q_2$ sería:
+```{r}
+CI <- c(mean(muestra) - sqrt(1/250)*q2, mean(muestra) - sqrt(1/250)*q1)
+CI
+```
+Es decir:
+$$
+CI = \big( `r CI[1]`, \ `r CI[2]` \big)
+$$
+Entonces, es obvio que $-1.2 \in CI$
+
+#### iv) Repetir 999 veces los pasos ii) y iii) para obtener en total 1000 intervalos de confianza de $\mu$ con nivel de confianza del 90\%. ¿Qué porcentaje de estos 1000 intervalos incluye a -1.2?
+\hfill
+```{r}
+
+intervalos <- data.frame(t(CI))
+
+for (i in 1:999) {
+  
+  muestra <- rnorm(n = n, mean = mu, sd = sqrt(sigma))
+  ci <- c(mean(muestra) - sqrt(1/250)*q2, mean(muestra) - sqrt(1/250)*q1)
+  intervalos <- rbind(intervalos, ci)
+  
+}
+
+porcentaje <- mean(intervalos[1] < (-1.2) & (-1.2) < intervalos[2])
+porcentaje
+```
+Es decir, el porcentaje de los 1000 intervalos que contiene a $-1.2$ es `r porcentaje*100`%
+
+#### v) Usando el mismo pivote $Q$ en i), encontrar otro (i.e. usar otra selección de $q_1$ y $q_2$ en $\mathbb{P}[q_1 < Q(X_1, X_2, \dots, X_{10}; \mu)< q_2] = 0.90$) intervalo de confianza de $\big(T_1(X_1, X_2, \dots, X_n), T_2(X_1, X_2, \dots, X_n)\big)$ con 90\% de nivel de confianza.  
+\hfill
+```{r}
+# 5% de la probabilidad
+alpha1 <- 0.05
+q1.2 <- qnorm(alpha1)
+
+# 5% de la probabilidad
+alpha2 <- .1 - alpha1
+q2.2 <- -qnorm(alpha2)
+
+c(q1.2, q2.2)
+```
+Por tanto, dado que el intervalo de confianza calculado en i) es $\big(\overline{X}_{10} - \sqrt{\frac{1}{250}}q_2, \ \overline{X}_{10} - \sqrt{\frac{1}{250}}q_1\big)$, el intervalo con los valores elegidos de $q_{1.2}$ y $q_{2.2}$ sería:
+```{r}
+CI.2 <- c(mean(muestra) - sqrt(1/250)*q2.2, mean(muestra) - sqrt(1/250)*q1.2)
+CI.2
+```
+Es decir:
+$$
+CI.2 = \big( `r CI.2[1]`, \ `r CI.2[2]` \big)
+$$
+\newpage
+
+#### ii) Generar (usando algún paquete econométrico) una muestra i.i.d. $\{X_i\}_{i=1}^{10} \sim N(1, \sigma^2)$, donde $\sigma^2 = 0.04$  
+\hfill
+```{r}
+n <- 10
+mu <- 1
+sigma <- 0.04
+muestra <- rnorm(n = n, mean = mu, sd = sqrt(sigma))
+```
+#### iii) Con los datos $\{X_i\}_{i=1}^{10}$ obtenidos en ii), encontrar el intervalo de confianza de $\sigma^2$, obtenido en i), con nivel de confianza del 90\%. ¿Se encuentra 0.04 dentro de este intervalo?
+\hfill
+Necesitamos unos $q_1$ y $q_2$ tales que la probabilidad sea del 90%, es decir, que el área bajo la curva sea de 0.9.
+```{r}
+# 6% de la probabilidad
+alpha1 <- 0.06
+q1 <- qchisq(p = 1-alpha1, df = n, lower.tail = F)
+
+# 4% de la probabilidad
+alpha2 <- .1 - alpha1
+q2 <- qchisq(p = 1-alpha2, df = n)
+
+c(q1, q2)
+```
+Por tanto, dado que el intervalo de confianza calculado en i) es $\big(\frac{\sum_{i=1}^{10}(X_i-1)^2}{q_2}, \ \frac{\sum_{i=1}^{10}(X_i-1)^2}{q_1}$, el intervalo con los valores elegidos de $q_1$ y $q_2$ sería:
+```{r}
+CI <- c(sum((muestra-1)^2)/q2, sum((muestra-1)^2)/q1)
+CI
+```
+Es decir:
+$$
+CI = \big( `r CI[1]`, \ `r CI[2]` \big)
+$$
+Entonces, es obvio que $0.04 \in CI$
+
+#### iv) Repetir 999 veces los pasos ii) y iii) para obtener en total 1000 intervalos de confianza de $\mu$ con nivel de confianza del 90\%. ¿Qué porcentaje de estos 1000 intervalos incluye a -1.2?
+\hfill
+```{r}
+
+intervalos <- data.frame(t(CI))
+
+for (i in 1:999) {
+  
+  muestra <- rnorm(n = n, mean = mu, sd = sqrt(sigma))
+  ci <- c(sum((muestra-1)^2)/q2, sum((muestra-1)^2)/q1)
+  intervalos <- rbind(intervalos, ci)
+  
+}
+
+porcentaje <- mean(intervalos[1] < (0.04) & (0.04) < intervalos[2])
+porcentaje
+```
+Es decir, el porcentaje de los 1000 intervalos que contiene a $0.04$ es `r porcentaje*100`%
+
+#### v) Usando el mismo pivote $Q$ en i), encontrar otro (i.e. usar otra selección de $q_1$ y $q_2$ en $\mathbb{P}[q_1 < Q(X_1, X_2, \dots, X_{10}; \mu)< q_2] = 0.90$) intervalo de confianza de $\big(T_1(X_1, X_2, \dots, X_n), T_2(X_1, X_2, \dots, X_n)\big)$ con 90\% de nivel de confianza.
+\hfill
+```{r}
+# 5% de la probabilidad
+alpha1 <- 0.05
+q1.2 <- qchisq(p = 1-alpha1, df = n, lower.tail = F)
+
+# 5% de la probabilidad
+alpha2 <- .1 - alpha1
+q2.2 <- qchisq(p = 1-alpha2, df = n)
+
+c(q1.2, q2.2)
+```
+Por tanto, dado que el intervalo de confianza calculado en i) es $\big(\overline{X}_{10} - \sqrt{\frac{1}{250}}q_2, \ \overline{X}_{10} - \sqrt{\frac{1}{250}}q_1\big)$, el intervalo con los valores elegidos de $q_{1.2}$ y $q_{2.2}$ sería:
+```{r}
+CI.2 <- c(sum((muestra-1)^2)/q2.2, sum((muestra-1)^2)/q1.2)
+CI.2
+```
+Es decir:
+$$
+CI.2 = \big( `r CI.2[1]`, \ `r CI.2[2]` \big)
+$$

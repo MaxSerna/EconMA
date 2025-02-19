@@ -1,0 +1,820 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb"]
+    dev: cairo_pdf
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+```
+
+## 2. Instrucciones
+\noindent\rule{\textwidth}{1pt}
+### i) Generar (usando algún paquete econométrico) una muestra i.i.d. $\bigl\{U_j\bigl\}_{j=1}^{40}$, $U_j \sim N(0,0.04)$ y otra muestra i.i.d. $\begin{Bmatrix} \begin{pmatrix} X_{1j} \\ X_{2j} \end{pmatrix} \end{Bmatrix}_{j=1}^{40}$, $\begin{pmatrix} X_{1j} \\ X_{2j} \end{pmatrix} \sim{N_2} \begin{pmatrix} \begin{pmatrix} 0\\ 0 \end{pmatrix}, \begin{pmatrix} 0.01 & -0.02\\ -0.02 & 0.09\end{pmatrix}\end{pmatrix}$, $j = 1, 2, \dots, 40$
+\hfill
+Generemos primero a $\bigl\{U_j\bigl\}_{j=1}^{40}$
+```{r}
+set.seed(1)
+n <- 40
+U <- rnorm(n = n, mean = 0, sd = sqrt(0.04))
+```
+Generemos ahora el vector normal bivariado
+```{r, warning=FALSE}
+library(mvtnorm)
+mu <- c(0, 0)
+Sigma <- matrix(c(0.01, -0.02,
+                  -0.02, 0.09),
+                nrow = 2,
+                byrow = T)
+X_j <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(X_j) <- c("X_1j", "X_2j")
+```
+
+### ii) Generar $\bigl\{Y_j\bigl\}_{j=1}^{40}$ donde \newline\newline $Y_j \equiv \beta_0 + \beta_1X_{1j} + \beta_2X_{2j} + U_j$, $j = 1, 2, \dots, 40$ \newline\newline con $\beta_0 = 1.1$, $\beta_1 = -2.4$ y $\beta_2 = 1.4$
+\hfill
+```{r}
+beta_0 <- 1.1
+beta_1 <- -2.4
+beta_2 <- 1.4
+
+Y <- beta_0 + beta_1*X_j$X_1j + beta_2*X_j$X_2j + U
+```
+
+### iii) Encontrar un intervalo de confianza de $\beta_2$ con nivel de confianza 90% ($\alpha$ = 0.10)
+\hfill
+En clase se vio que utilizando el pivote (ii) con distribución \textit{t}-student: $\dfrac{\hat{b}_{iMCO} - b_i}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{ii}^{-1}}} \sim t_{n-k}$, podemos construir el intervalo de confianza para $\beta_2$ como sigue^[Notemos que $\hat{b}_{3MCO} = \hat{\beta_2}_{MCO}$, es decir, $i=3$.]:
+$$
+\mathbb{P}\Biggr[-t_{\dfrac{\alpha}{2}} < \dfrac{\hat{\beta_2}_{MCO} - \beta_2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}} < t_{\dfrac{\alpha}{2}} \Biggr] = 0.90
+$$
+Partiendo de lo anterior, en clase se vio que el intervalo se ve como:
+$$
+\mathbb{P}\Biggr[ \hat{\beta_2}_{MCO}-t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}} < \beta_2 < \hat{\beta_2}_{MCO}+t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}} \Biggr] = 0.90
+$$
+Es decir, el intervalo de confianza es:
+$$
+\Biggl(\hat{\beta_2}_{MCO}-t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}},\ \ \ \ \ \hat{\beta_2}_{MCO}+t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}} \Biggl)
+$$
+Con $\hat{\sigma}_{uMCO} = \sqrt{\dfrac{1}{n-k}U'MU} \ ,\ \ M = \mathbb{I}_n - X(X'X)^{-1}X'$. 
+
+En lo sucesivo, calcularemos las piezas del rompecabezas necesarias para calcular el intervalo.
+
+Comencemos con $t_{\dfrac{\alpha}{2}}$:
+```{r}
+k <- 3
+alpha <- 0.1
+t_q <- qt(p = 1-alpha/2, df = n-k)
+```
+Calculemos ahora $\hat{b}_{MCO}$ (y por tanto $\hat{\beta_2}_{MCO}$), sabiendo que $\hat{b}_{MCO} = (X'X)^{-1}X'Y$
+```{r}
+X <- cbind(1, X_j)
+b_mco <- solve(t(X)%*%as.matrix(X))%*%t(X)%*%Y
+beta2_mco <- b_mco[3]
+```
+Calculemos $\hat{\sigma}_{uMCO}$
+```{r}
+X <- as.matrix(X)
+var.u_mco <- 1/(n-k)*t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%U
+sd.u_mco <- sqrt(var.u_mco)
+```
+Finalmente, computemos $\sqrt{(X'X)_{33}^{-1}}$
+```{r}
+XX_inv <- solve(t(X)%*%X)
+sqrt(XX_inv[3,3])
+```
+Ahora calculemos el intervalo:
+```{r}
+ci_beta2 <- c(beta2_mco - t_q*sd.u_mco*sqrt(XX_inv[3,3]),
+              beta2_mco + t_q*sd.u_mco*sqrt(XX_inv[3,3]))
+ci_beta2
+```
+Es decir:
+$$
+\mathbb{P}\bigr[ `r ci_beta2[1]` < \beta_2 < `r ci_beta2[2]` \bigr] = 0.90
+$$
+
+### iv) Encontrar un intervalo de confianza de $\sigma_u^2$ con nivel de confianza 95% ($\alpha$ = 0.05)
+\hfill
+En el inciso (i) vimos que el intervalo de confianza es:
+$$
+\mathbb{P} \Biggr[ \dfrac{U'MU}{q_2} < \sigma_u^2 < \dfrac{U'MU}{q_1} \Biggr] = 0.95
+$$
+Entonces
+$$
+CI_{\sigma_u^2} = \Biggl(\dfrac{U'MU}{q_2}\ \ ,\ \  \dfrac{U'MU}{q_1} \Biggl)
+$$
+Hallemos los valores de los cuantiles:
+```{r}
+# 2.5% de la probabilidad
+alpha1 <- 0.025
+q1 <- qchisq(p = 1-alpha1, df = n-k, lower.tail = F)
+
+# 2.5% de la probabilidad
+alpha2 <- .05 - alpha1
+q2 <- qchisq(p = 1-alpha2, df = n-k)
+
+c(q1, q2)
+```
+Calculemos los intervalos de confianza:
+```{r}
+ci_sigma <- c((t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%U)/q2,
+              (t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%U)/q1
+              )
+ci_sigma
+```
+Es decir
+$$
+\mathbb{P} \Biggr[ `r ci_sigma[1]` < \sigma_u^2 < `r ci_sigma[2]` \Biggr] = 0.95
+$$
+
+### v) Repetir 999 veces los pasos i), ii), iii) y iv) para obtener un total de 1000 intervalos de confianza de $\beta_2$ y 1000 intervalos de confianza de $\sigma_u^2$. ¿Qué porcentaje de los 1000 intervalos de confianza de $\beta_2$ incluyen a 1.4? ¿Qué porcentaje de los 1000 intervalos de confianza de $\sigma_u^2$ incluyen a 0.04?
+\hfill
+El código siguiente genera los 999 intervalos restantes, y calcula el porcentaje que buscamos:
+```{r}
+
+intervalos_beta2 <- data.frame(t(ci_beta2))
+intervalos_sigma <- data.frame(t(ci_sigma))
+
+for (i in 1:999) {
+  #generamos U
+  U <- rnorm(n = n, mean = 0, sd = sqrt(0.04))
+  #generamos X
+  X_j <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma))
+  names(X_j) <- c("X_1j", "X_2j")
+  X <- as.matrix(cbind(1, X_j))
+  #generamos Y
+  Y <- beta_0 + beta_1*X_j$X_1j + beta_2*X_j$X_2j + U
+  
+  #calculamos las piezas del rompecabezas
+  ## b_mco
+  b_mco <- solve(t(X)%*%X)%*%t(X)%*%Y
+  beta2_mco <- b_mco[3]
+  ## var.u_mco
+  UMU <- t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%U
+  var.u_mco <- 1/(n-k)*UMU
+  sd.u_mco <- sqrt(var.u_mco)
+  ## XX_inv
+  XX_inv <- solve(t(X)%*%X)
+  
+  #generamos el intervalo de confianza para beta2
+  intervalos_beta2 <- rbind(intervalos_beta2,
+                            c(beta2_mco - t_q*sd.u_mco*sqrt(XX_inv[3,3]),
+                              beta2_mco + t_q*sd.u_mco*sqrt(XX_inv[3,3]))
+                            )
+  
+  #generamos el intervalo de confianza para sigma
+  intervalos_sigma <- rbind(intervalos_sigma,
+                            c(UMU/q2,
+                              UMU/q1)
+                            )
+}
+porcentaje_beta2 <- mean(intervalos_beta2[1] < (1.4) & (1.4) < intervalos_beta2[2])
+porcentaje_sigma <- mean(intervalos_sigma[1] < (0.04) & (0.04) < intervalos_sigma[2])
+```
+Para $\beta_2$:
+```{r}
+porcentaje_beta2
+```
+Es decir, 1.4 está en el `r porcentaje_beta2*100`% de los 1000 intervalos, que es cercano al 90% esperado.
+
+Ahora bien, para el caso de $\sigma_u^2$:
+```{r}
+porcentaje_sigma
+```
+Es decir, 1.4 está en el `r porcentaje_sigma*100`% de los 1000 intervalos, que es cercano al 95% esperado.
+
+\newpage
+
+## 3. $\begin{Bmatrix} \begin{pmatrix} Y_j \\ \mathbf{X}_j \end{pmatrix} \end{Bmatrix}_{j=1}^{n}$ vectores aleatorios  i.i.d. dimensión $k$. $n>k$. \newline\newline\newline $\mathbf{Y} = \mathbf{Xb} + \mathbf{U}$, $\mathbb{E}[\mathbf{U}|\mathbf{X}]=0$. \newline\newline $\mathbb{P}[Rango(\mathbf{X})=k]=1$  \newline\newline $Var(\mathbf{U}|\mathbf{X})=\sigma_u^2\mathbb{I}_n$ (homocedasticidad condicional).  \newline\newline $\mathbf{U}|_{\mathbf{X}=X} \sim N_n$
+\noindent\rule{\textwidth}{1pt}
+### i) $\mathbf{c}\in\mathbb{R}^k$ vector fijo. Construir un intervalo de confianza (100(1-$\alpha$)%) de $\mathbf{c'}\mathbf{b}$.
+\hfill
+
+Podemos utilizar el siguiente pivote para construir el intervalo: 
+$$
+\dfrac{\mathbf{c}'\hat{\mathbf{b}}_{MCO} - \mathbf{c}'\mathbf{b}}{\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}}} \sim t_{n-k}
+$$
+Partimos de:
+$$
+\mathbb{P} \Biggr[ -t_{\dfrac{\alpha}{2}} < \dfrac{\mathbf{c}'\hat{\mathbf{b}}_{MCO} - \mathbf{c}'\mathbf{b}}{\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}}} < t_{\dfrac{\alpha}{2}} \Biggr] = 1-\alpha
+$$
+Multiplicamos por $\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}}$:
+$$
+\mathbb{P} \Biggr[ -t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} < \mathbf{c}'\hat{\mathbf{b}}_{MCO} - \mathbf{c}'\mathbf{b} < t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} \Biggr] = 1-\alpha
+$$
+Restamos $\mathbf{c}'\hat{\mathbf{b}}_{MCO}$:
+$$
+\mathbb{P} \Biggr[ -\mathbf{c}'\hat{\mathbf{b}}_{MCO}-t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} < - \mathbf{c}'\mathbf{b} < -\mathbf{c}'\hat{\mathbf{b}}_{MCO} +t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} \Biggr] = 1-\alpha
+$$
+Invertimos signos:
+$$
+\mathbb{P} \Biggr[ \mathbf{c}'\hat{\mathbf{b}}_{MCO} + t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} > \mathbf{c}'\mathbf{b} > \mathbf{c}'\hat{\mathbf{b}}_{MCO} - t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} \Biggr] = 1-\alpha
+$$
+Intercambiamos términos:
+$$
+\mathbb{P} \Biggr[ \mathbf{c}'\hat{\mathbf{b}}_{MCO} - t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} < \mathbf{c}'\mathbf{b} < \mathbf{c}'\hat{\mathbf{b}}_{MCO} + t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}}  \Biggr] = 1-\alpha
+$$
+Entonces, el intervalo de confianza es:
+$$
+CI_{\mathbf{c}'\mathbf{b}} = \Biggl(\mathbf{c}'\hat{\mathbf{b}}_{MCO} - t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}}\ \ ,\ \  \mathbf{c}'\hat{\mathbf{b}}_{MCO} + t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO}\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}} \Biggl)
+$$
+
+
+### ii) Generar (usando algún paquete econométrico) una muestra i.i.d. $\bigl\{U_j\bigl\}_{j=1}^{40}$, $U_j \sim N(0,0.04)$ y otra muestra i.i.d. $\begin{Bmatrix} \begin{pmatrix} X_{1j} \\ X_{2j} \end{pmatrix} \end{Bmatrix}_{j=1}^{40}$, $\begin{pmatrix} X_{1j} \\ X_{2j} \end{pmatrix} \sim{N_2} \begin{pmatrix} \begin{pmatrix} 0\\ 0 \end{pmatrix}, \begin{pmatrix} 0.01 & -0.02\\ -0.02 & 0.09\end{pmatrix}\end{pmatrix}$, $j = 1, 2, \dots, 40$
+\hfill
+Generemos primero a $\bigl\{U_j\bigl\}_{j=1}^{40}$
+```{r}
+rm(list = ls())
+set.seed(1)
+n <- 40
+U <- rnorm(n = n, mean = 0, sd = sqrt(0.04))
+```
+Generemos ahora el vector normal bivariado
+```{r}
+library(mvtnorm)
+mu <- c(0, 0)
+Sigma <- matrix(c(0.01, -0.02,
+                  -0.02, 0.09),
+                nrow = 2,
+                byrow = T)
+X_j <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(X_j) <- c("X_1j", "X_2j")
+```
+
+### iii) Generar $\bigl\{Y_j\bigl\}_{j=1}^{40}$ donde \newline\newline $Y_j \equiv \beta_0 + \beta_1X_{1j} + \beta_2X_{2j} + U_j$, $j = 1, 2, \dots, 40$ \newline\newline con $\beta_0 = 1.1$, $\beta_1 = -2.4$ y $\beta_2 = 1.4$
+\hfill
+```{r}
+beta_0 <- 1.1
+beta_1 <- -2.4
+beta_2 <- 1.4
+
+Y <- beta_0 + beta_1*X_j$X_1j + beta_2*X_j$X_2j + U
+```
+
+### iv) Con los datos obtenidos en ii) y iii) encontrar un intervalo de confianza de $\beta_1 - 3\beta_2$ con nivel de confianza de 99%.
+
+Sabiendo que $\mathbf{b} = \Bigl(\beta_0\ \ \ \beta_1\ \ \ \beta_2)'$, con el dato anterior vemos que $\mathbf{c} = \Bigl(0\ \ \ \ 1\ -3)'$. Teniendo este dato, calculemos lo necesario para construir el intervalo de confianza hallado en i).
+
+Comencemos con $t_{\dfrac{\alpha}{2}}$:
+```{r}
+k <- 3
+alpha <- 0.01
+t_q <- qt(p = 1-alpha/2, df = n-k)
+```
+Ahora hallemos $\hat{b}_{MCO}$, sabiendo que $\hat{b}_{MCO} = (X'X)^{-1}X'Y$:
+```{r}
+X <- cbind(1, X_j)
+b_mco <- solve(t(X)%*%as.matrix(X))%*%t(X)%*%Y
+```
+Calculemos $\hat{\sigma}_{uMCO}$
+```{r}
+X <- as.matrix(X)
+var.u_mco <- 1/(n-k)*t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%U
+sd.u_mco <- sqrt(var.u_mco)
+```
+Finalmente, computemos $\sqrt{\mathbf{c}'(\mathbf{X}'\mathbf{X})^{-1}\mathbf{c}}$
+```{r}
+c <- c(0, 1, -3)
+XX_inv <- solve(t(X)%*%X)
+c.XX_inv.c <- t(c)%*%XX_inv%*%c
+```
+Teniendo los elementos anteriores, calculemos el intervalo de confianza:
+```{r}
+ci_cb <- c(
+  t(c)%*%b_mco - t_q*sd.u_mco*sqrt(c.XX_inv.c),
+  t(c)%*%b_mco + t_q*sd.u_mco*sqrt(c.XX_inv.c)
+)
+ci_cb
+```
+Es decir, el intervalo de confianza calculado para $\mathbf{c}'\mathbf{b}$ con un nivel de confianza del 99% es:
+$$
+CI_{\mathbf{c}'\mathbf{b}} = \Biggl( `r ci_cb[1]` ,\ \ `r ci_cb[2]` \Biggl)
+$$
+
+
+### v) Repetir 999 veces los pasos ii), iii) y iv) para obtener en total 1000 intervalos de confianza de $\beta_1 - 3\beta_2$. ¿Qué porcentaje de los 1000 intervalos de confianza de $\beta_1 - 3\beta_2$ incluyen a $-6.6$ ($6.6 = -2.4 - 3*1.4$)?
+\hfill
+```{r}
+intervalos_cb <- data.frame(t(ci_cb))
+set.seed(2)
+for (i in 1:999) {
+  
+  #generamos U
+  U <- rnorm(n = n, mean = 0, sd = sqrt(0.04))
+  #generamos X
+  X_j <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma))
+  names(X_j) <- c("X_1j", "X_2j")
+  X <- as.matrix(cbind(1, X_j))
+  #generamos Y
+  Y <- beta_0 + beta_1*X_j$X_1j + beta_2*X_j$X_2j + U
+  
+  #calculamos las piezas del rompecabezas
+  ## b_mco
+  b_mco <- solve(t(X)%*%as.matrix(X))%*%t(X)%*%Y
+  ## var.u_mco
+  UMU <- t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%U
+  var.u_mco <- 1/(n-k)*UMU
+  sd.u_mco <- sqrt(var.u_mco)
+  ## c'.XX_inv.c
+  c <- c(0, 1, -3)
+  XX_inv <- solve(t(X)%*%X)
+  c.XX_inv.c <- t(c)%*%XX_inv%*%c
+  
+  #generamos el intervalo de confianza para sigma
+  intervalos_cb <- rbind(intervalos_cb,
+                         c(t(c)%*%b_mco - t_q*sd.u_mco*sqrt(c.XX_inv.c),
+                           t(c)%*%b_mco + t_q*sd.u_mco*sqrt(c.XX_inv.c))
+                         )
+}
+
+porcentaje_cb <- mean(intervalos_cb[1] < (-6.6) & (-6.6) < intervalos_cb[2])
+porcentaje_cb
+```
+Es decir, el porcentaje de los 1000 intervalos de $\mathbf{c}'\mathbf{b}=\beta_1 - 3\beta2$ que incluyen a -6.6, es `r porcentaje_cb*100`%; muy cercano al 99% esperado. 
+
+\newpage
+
+## 4. En este ejercicio se ilustra la consecuencia de la presencia de quasi multicolinealidad (una de las columnas de $\mathbf{X}$ es casi una combinación lineal de las demás) sobre los estimadores de los parámetros y sus intervalos de confianza.
+\noindent\rule{\textwidth}{1pt}
+### i) Generar una muestra i.i.d.
+$$
+\begin{Bmatrix} \begin{pmatrix} Y_i \\ X_i \end{pmatrix} \end{Bmatrix}_{i=1}^{100} \sim{N_2} \begin{pmatrix} \begin{pmatrix} 0\\ 0.5 \end{pmatrix}, \begin{pmatrix} 0.36 & 0.000002\\ 0.000002 & 0.000001\end{pmatrix}\end{pmatrix}
+$$
+```{r}
+set.seed(1)
+rm(list = ls())
+
+n <- 100
+mu <- c(0, 0.5)
+Sigma <- matrix(c(0.36, 0.000002,
+                  0.000002, 0.000001),
+                nrow = 2,
+                byrow = T)
+Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(Z) <- c("Y_i", "X_i")
+```
+
+
+### ii) $Y_i = \alpha_0 + \beta_0X_i + U_i$, $\mathbb{E}[U_i|X_i]=0$, $i = 1, 2, \dots, 100$, $var(U_i) = \sigma_u^2$. Con los parámetros dados en el inciso i), encontrar los valores verdaderos de $\alpha_0$, $\beta_0$ y $\sigma_u^2$.
+
+Comencemos por estimar los valores de $\alpha_0$, $\beta_0$. Recordemos que $b = \begin{pmatrix} \alpha_0 \\ \beta_0\end{pmatrix}$, y que en clase hemos visto que:
+$$
+\mathbf{b} = \begin{pmatrix} \mu_Y - \Sigma_{YX}\Sigma_X^{-1}\mu_X \\ \Sigma_X^{-1}\Sigma_{YX}' \end{pmatrix} = \begin{pmatrix} \mu_Y - \dfrac{\sigma_{YX}\mu_X}{\sigma_X^2} \\ \dfrac{\sigma_{YX}}{\sigma_X^2} \end{pmatrix} =\begin{pmatrix} \alpha_0 \\ \beta_0\end{pmatrix}
+$$
+Calculemos entonces los valores:
+```{r}
+#Calculamos alpha_0
+alpha_0 <- mu[1] - (Sigma[1,2]*mu[2])/Sigma[2,2]
+
+#Calculemos beta_0
+beta_0 <- Sigma[1,2]/Sigma[2,2]
+
+#Armamos vector b
+b <- t(cbind(alpha_0, beta_0))
+b
+```
+Es decir, $\alpha_0 = `r b[1]`$ y $\beta_0 = `r b[2]`$
+
+Ahora, sabemos que $\sigma_u^2=\sigma_Y^2 - \dfrac{\sigma_{YX}^2}{\sigma_X^2}$. Calculemos:
+```{r}
+var_u <- Sigma[1,1] - (Sigma[1,2]^2)/Sigma[2,2]
+var_u
+```
+Es decir, $\sigma_u^2 = `r var_u`$
+
+### iii) En un mismo plano graficar la muestra obtenida en i) junto con la recta $y=\alpha_0 + \beta_0 x$, donde $0\le x\le 1$. $\alpha_0$ y $\beta_0$ son los valores obtenidos en ii).
+\hfill
+```{r, warning=FALSE}
+library(ggplot2)
+library(hrbrthemes)
+
+ggplot(Z, aes(x=X_i, y=Y_i)) + 
+  geom_point(color="black",
+               fill="#69b3a2",
+               shape=22,
+               alpha=0.65,
+               size=2) +
+  geom_function(fun = function(x) b[1] + b[2]*x) +
+  theme_ipsum()
+```
+
+### iv) Con los datos obtenidos en i), calcular el determinante de $\mathbf{X}'\mathbf{X}$. Imprimir las matrices $\mathbf{X}_{100x2}$ y $(\mathbf{X}'\mathbf{X})^{-1}$. ¿Hay multicolinealidad?
+\hfill
+```{r}
+X <- cbind(1, Z$X_i)
+XX <- t(X)%*%as.matrix(X)
+XX
+det(XX)
+```
+Es decir:
+$$
+\mathbf{X}'\mathbf{X} = \begin{pmatrix} `r XX[1,1]` & `r XX[1,2]` \\ `r XX[2,1]` & `r XX[2,2]` \end{pmatrix} \\ \\
+$$
+Es visible que la primer columna es aproximadamente dos veces la segunda columna; sin embargo, al no ser exacta esta relación, no es combinación lineal, sino una "quasi" combinación lineal.
+Además:
+$$
+det(\mathbf{X}'\mathbf{X}) = \begin{vmatrix} `r XX[1,1]` & `r XX[1,2]` \\ `r XX[2,1]` & `r XX[2,2]` \end{vmatrix} = `r det(XX)`
+$$
+Al existir quasi multicolinealidad, y al ver que existe una quasi combinación lineal, es determinante es casi cero, pero no exactamente cero.
+
+Matriz $\mathbf{X}_{100x2}$ (primeras y últimas filas):
+```{r}
+head(X)
+tail(X)
+```
+\newpage
+Matriz $(\mathbf{X}'\mathbf{X})^{-1}$:
+```{r}
+solve(XX)
+```
+No hay multicolinealidad dado que la inversa de $\mathbf{X}'\mathbf{X}$ existe, aunque es notoria la casi relación uno a dos entre la primer y la segunda columna de la matriz $\mathbf{X}_{100x2}$.
+
+### v) Con los datos obtenidos en i), estimar por mínimos cuadrados ordinarios el modelo de regresión lineal: $$Y_i = \alpha + \beta X_i + U_i \ \ \ \ \ \ i=1,2,\dots,100$$ obteniendo así los estimados $\hat{b}_{MCO} = \begin{pmatrix} \hat{\alpha} \\ \hat{\beta} \end{pmatrix}$ y $\hat{\sigma}_u^2$ y los estimados de las varianzas condicionales $\hat{var}(\hat{\alpha}|\mathbf{X})$, $\hat{var}(\hat{\beta}|\mathbf{X})$ y $\hat{var}(\hat{\sigma}_u^2|\mathbf{X})$.
+
+Estimemos por MCO:
+```{r}
+b_mco <- solve(t(X)%*%as.matrix(X))%*%t(X)%*%as.matrix(Z$Y_i)
+b_mco
+```
+Calculemos $\hat{\sigma}_{uMCO}^2 = \dfrac{1}{n-k}\hat{U}'\hat{U}$
+```{r}
+k <- 1
+U <- Z$Y_i - X%*%b
+var.u_mco <- 1/(n-k)*t(U)%*%(diag(1, nrow = n) - X%*%solve(t(X)%*%X)%*%t(X))%*%(U)
+var.u_mco
+```
+Es decir:
+$$
+\begin{aligned}
+\hat{b}_{MCO} &= \begin{pmatrix} \hat{\alpha} \\ \hat{\beta} \end{pmatrix} = \begin{pmatrix} `r b_mco[1]` \\ `r b_mco[2]` \end{pmatrix} \\ \\
+\hat{\sigma}_{uMCO}^2 &= `r var.u_mco`
+\end{aligned}
+$$
+
+Calculemos ahora las varianzas condicionadas.  
+Para los parámetros $\hat{\alpha}$ y $\hat{\beta}$, sabemos que $var(\hat{b}_{MCO}|\mathbf{X}) = \sigma_u^2(\mathbf{X'X})^{-1}$, por lo que $var(\hat{\alpha}_{MCO}|\mathbf{X}) = \sigma_u^2(\mathbf{X'X})^{-1}_{11}$ y $var(\hat{\beta}_{MCO}|\mathbf{X}) = \sigma_u^2(\mathbf{X'X})^{-1}_{22}$:
+```{r}
+var_cond_b <- var_u*solve(XX)
+var_cond_alpha <- var_cond_b[1,1]
+var_cond_beta <- var_cond_b[2,2]
+var_cond_b
+```
+Finalmente, sabemos que $\hat{var}(\hat{\sigma}_u^2|\mathbf{X}) = \dfrac{2}{n-k}\sigma_u^4$
+```{r}
+var_cond_u <- 2/(n-k)*var_u^2
+```
+Es decir:
+$$
+\begin{aligned}
+var(\hat{\alpha}_{MCO}|\mathbf{X}) &= `r var_cond_alpha` \\
+var(\hat{\beta}_{MCO}|\mathbf{X}) &= `r var_cond_beta` \\
+\hat{var}(\hat{\sigma}_u^2|\mathbf{X}) &= `r var_cond_u` \\
+\end{aligned}
+$$
+
+### vi) Encontrar un intervalo de confianza de $\alpha$ con nivel de confianza del 95%  
+Replicando lo que se hizo en el ejercicio 2, inciso iii), el intervalo de confianza para $\alpha$ es:
+$$
+\Biggl(\hat{\alpha}_{MCO}-t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}},\ \ \ \ \ \hat{\alpha}_{MCO}+t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}} \Biggl)
+$$
+Con $\alpha = 5\%$.
+
+En lo sucesivo, calcularemos las piezas del rompecabezas necesarias para calcular el intervalo.
+
+Comencemos con $t_{\dfrac{\alpha}{2}}$:
+```{r}
+alpha <- 0.05
+t_q <- qt(p = 1-alpha/2, df = n-k)
+```
+Calculemos $\hat{\sigma}_{uMCO}$
+```{r}
+sd.u_mco <- sqrt(var.u_mco)
+```
+Finalmente, computemos $\sqrt{(X'X)_{11}^{-1}}$
+```{r}
+XX_inv <- solve(t(X)%*%X)
+sqrt(XX_inv[1,1])
+```
+Ahora calculemos el intervalo:
+```{r}
+ci_alpha <- c(b_mco[1] - t_q*sd.u_mco*sqrt(XX_inv[1,1]),
+              b_mco[1] + t_q*sd.u_mco*sqrt(XX_inv[1,1]))
+ci_alpha
+```
+Es decir:
+$$
+\mathbb{P}\bigr[ `r ci_alpha[1]` < \alpha < `r ci_alpha[2]` \bigr] = 0.95
+$$
+
+### vii) Encontrar un intervalo de confianza de $\beta$ con nivel de confianza del 95%  
+Con analogía al inciso anterior, el intervalo de confianza para $\beta$ es:
+$$
+\Biggl(\hat{\beta}_{MCO}-t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}},\ \ \ \ \ \hat{\beta}_{MCO}+t_{\dfrac{\alpha}{2}}\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}} \Biggl)
+$$
+Con $\alpha = 5\%$.
+
+Calculemos el intervalo:
+```{r}
+ci_beta <- c(b_mco[2] - t_q*sd.u_mco*sqrt(XX_inv[2,2]),
+              b_mco[2] + t_q*sd.u_mco*sqrt(XX_inv[2,2]))
+ci_beta
+```
+Es decir:
+$$
+\mathbb{P}\bigr[ `r ci_beta[1]` < \beta < `r ci_beta[2]` \bigr] = 0.95
+$$
+
+### viii) Repetir 4 veces los pasos i) y v) para obtener y comparar los estimados $\{\hat{\alpha}_i\}_{i=1}^5$, $\{\hat{\beta}_i\}_{i=1}^5$ y $\{\hat{\sigma}_{ui}^2\}_{i=1}^5$ entre ellos y con los valores verdaderos de $\alpha_0$, $\beta_0$ y $\sigma_u^2$.
+\hfill
+```{r}
+estimados <- data.frame(
+  alphaMCO = b_mco[1],
+  beta_MCO = b_mco[2],
+  sigma_u_MCO = var.u_mco
+  )
+
+for (i in 2:5) {
+  Z <- data.frame(
+    rmvnorm(
+      n,
+      mean = mu,
+      sigma = Sigma)
+    )
+  names(Z) <- c("Y_i", "X_i")
+  
+  #matriz X_{nxk}
+  X <- cbind(1, Z$X_i)
+  #vector U dim n
+  U <- Z$Y_i - X%*%b
+  I_n <- diag(1, nrow = n)
+  
+  #estimadores de MCO
+  b.mco_4times <- solve(t(X)%*%as.matrix(X))%*%t(X)%*%as.matrix(Z$Y_i)
+  var.u.mco_4times <- 1/(n-k)*t(U)%*%(I_n - X%*%solve(t(X)%*%X)%*%t(X))%*%(U) 
+  
+  estimados <- rbind(estimados,
+                     c(b.mco_4times,
+                       var.u.mco_4times)
+                     )
+}
+```
+Los parámetros estimados son entonces:
+```{r, warning=FALSE}
+library(knitr)
+kable(estimados,
+      col.names = c("$\\{\\hat{\\alpha}_i\\}_{i=1}^5$",
+                    "$\\{\\hat{\\beta}_i\\}_{i=1}^5$",
+                    "$\\{\\hat{\\sigma}_{ui}^2\\}_{i=1}^5$")
+      )
+```
+Mientras que los valores reales son:
+```{r}
+kable(data.frame(t(b), var_u),
+      col.names = c("$\\alpha_0$",
+                    "$\\beta_0$",
+                    "$\\sigma_u^2$")
+      )
+```
+Se observa que, dada la quasi multicolinealidad, las varianzas de los estimadores son muy grandes (como se vio en el inciso v), lo que deriva en las grandes diferencias entre los estimados de la primer tabla y los valores reales. Por otro lado, la varianza condicional de U no fue tan grande, por lo que sus estimados no son tan distintos de su valor real como en el caso de los estimadores de mínimos cuadrados ordinarios.
+
+\newpage
+## 5. $\begin{Bmatrix} \begin{pmatrix} Y_i \\ X_{1i} \\ X_{2i} \end{pmatrix} \end{Bmatrix}_{i=1}^{100}$ vectores aleatorios  i.i.d. dimensión 3. $\begin{pmatrix} Y_i \\ X_{1i} \\ X_{2i} \end{pmatrix} \sim N_3$. \newline\newline\newline  $Y_i = b_1 + b_2X_{1i} + b_3X_{2i} + U_i, \ \ \mathbb{E}[U_i|X_{1i},X_{2i}]=0, \ \ i=1,2,\dots,100$
+\noindent\rule{\textwidth}{1pt}
+
+### i) Generar una muestra i.i.d. $\begin{Bmatrix} \begin{pmatrix} Y_i \\ X_{1i} \\ X_{2i} \end{pmatrix} \end{Bmatrix}_{i=1}^{100}$ donde $\begin{pmatrix} Y_i \\ X_{1i} \\ X_{2i} \end{pmatrix} \sim{N_3} \begin{pmatrix} \begin{pmatrix} 1\\ 0\\ 2 \end{pmatrix}, \begin{pmatrix} 0.8 & 0.4 & -0.2\\ 0.4 & 1.0 & -0.8 \\ -0.2 & -0.8 & 2.0 \end{pmatrix}\end{pmatrix}$.
+```{r}
+set.seed(1)
+rm(list = ls())
+
+n <- 100
+mu <- c(1, 0, 2)
+Sigma <- matrix(c(0.8, 0.4, -0.2,
+                  0.4, 1, -0.8,
+                  -0.2, -0.8, 2),
+                nrow = 3,
+                byrow = T)
+Z <- data.frame(
+  rmvnorm(
+    n,
+    mean = mu,
+    sigma = Sigma)
+  )
+names(Z) <- c("Y", "X_1", "X_2")
+```
+
+### ii) Probar la hipótesis $$\mathbf{H}_0: b_1=0$$ contra la alternativa $$\mathbf{H}_1: b_1 \neq 0$$ con un nivel de significancia del 1%.
+
+Podemos utilizar el pivote: 
+$$\dfrac{\hat{b}_{1MCO} - b_1}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}}} \sim t_{n-k}$$
+Lo anterior, al contener a $b_1$, no conocido aún, no es un estadístico. No obstante, bajo $\mathbf{H}_0$ sabemos que $b_1=0$, de modo que el pivote anterior se convierte en un estadístico dado que ya no contiene parámetros desconocidos:
+$$
+  \dfrac{\hat{b}_{1MCO}}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}}} \sim t_{n-k}
+$$
+Como vimos en clase, con esto podemos plantear una prueba de hipótesis en donde la regla de decisión es tal que:  
+Si $\mathbf{H}_0$ es cierta, entonces $\begin{vmatrix} \dfrac{\hat{b}_{1MCO}}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}}}\end{vmatrix} < t_{\alpha/2}$. \newline\newline  
+En conclusión:
+\newline\newline
+Si $\begin{vmatrix} \dfrac{\hat{b}_{1MCO}}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}}}\end{vmatrix} < t_{\alpha/2}$ aceptamos $\mathbf{H}_0: b_1=0$. 
+\newline\newline\newline
+Si $\begin{vmatrix} \dfrac{\hat{b}_{1MCO}}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}}}\end{vmatrix} \ge t_{\alpha/2}$ rechazamos $\mathbf{H}_0: b_1=0$, y aceptamos $\mathbf{H}_1: b_1 \neq 0$
+\newline\newline
+Ahora bien, dado que el nivel de significancia buscado es tal que $\alpha=1\%$, el valor crítico $t_{\alpha/2}$ pretendido es:
+```{r}
+alpha <- 0.01
+k <- 3
+t_q <- qt(p = alpha/2, df = n-k, lower.tail = F)
+```
+Es decir, $t_{\alpha/2} = `r t_q`$
+
+Teniendo lo anterior, hagamos los cálculos necesarios para construir los elementos de la prueba. Comencemos con los estimadores de MCO: $\hat{b}_{MCO} = (X'X)^{-1}X'Y$
+```{r}
+X <- cbind(1, Z[,-1])
+b_mco <- solve(t(X)%*%as.matrix(X))%*%t(X)%*%Z$Y
+b_1_mco <- b_mco[1]
+```
+Calculemos ahora $\hat{\sigma}_{uMCO}$
+```{r}
+X <- as.matrix(X)
+U_mco <- Z$Y - as.matrix(X)%*%as.matrix(b_mco)
+var.u_mco <- 1/(n-k)*t(U_mco)%*%U_mco
+sd.u_mco <- sqrt(var.u_mco)
+```
+Finalmente, computemos $(X'X)^{-1}$
+```{r}
+XX_inv <- solve(t(X)%*%X)
+```
+Entonces:
+$$
+\begin{aligned}
+\hat{b}_{1MCO} &= `r b_1_mco` \\
+\hat{\sigma}_{uMCO} &= `r sd.u_mco` \\
+\sqrt{(X'X)^{-1}_{11}} &= `r sqrt(XX_inv)[1,1]`
+\end{aligned}
+$$
+Por lo tanto:
+$$
+\begin{vmatrix} \dfrac{\hat{b}_{1MCO}}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{11}^{-1}}}\end{vmatrix} = \begin{vmatrix} \dfrac{`r b_1_mco`}{`r sd.u_mco` * `r sqrt(XX_inv)[1,1]`}\end{vmatrix} = |`r b_1_mco/(sd.u_mco*sqrt(XX_inv)[1,1])`| > `r t_q`
+$$
+Es decir, dado que $|`r b_1_mco/(sd.u_mco*sqrt(XX_inv)[1,1])`| > `r t_q`$, rechazamos $\mathbf{H}_0: b_1=0$ y aceptamos $\mathbf{H}_1: b_1 \neq 0$
+
+\newpage
+### iii) Probar la hipótesis $$\mathbf{H}_0: b_2=0.5$$ contra la alternativa $$\mathbf{H}_1: b_2 \neq 0.5$$ con un nivel de significancia del 5%.
+
+Al igual que en el inciso anterior, podemos utilizar el pivote: 
+$$\dfrac{\hat{b}_{2MCO} - b_2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}}} \sim t_{n-k}$$
+Lo anterior, al contener a $b_2$, no conocido aún, no es un estadístico. No obstante, bajo $\mathbf{H}_0$ sabemos que $b_2=0.5$, de modo que el pivote anterior se convierte en un estadístico dado que ya no contiene parámetros desconocidos:
+$$
+\dfrac{\hat{b}_{2MCO} - 0.5}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}}} \sim t_{n-k}
+$$
+Como vimos en clase, con esto podemos plantear una prueba de hipótesis en donde la regla de decisión es tal que:  
+Si $\mathbf{H}_0$ es cierta, entonces $\begin{vmatrix} \dfrac{\hat{b}_{2MCO} - 0.5}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}}}\end{vmatrix} < t_{\alpha/2}$. \newline\newline  
+En conclusión:
+\newline\newline
+Si $\begin{vmatrix} \dfrac{\hat{b}_{2MCO} - 0.5}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}}}\end{vmatrix} < t_{\alpha/2}$ aceptamos $\mathbf{H}_0: b_2=0.5$. 
+\newline\newline\newline
+Si $\begin{vmatrix} \dfrac{\hat{b}_{2MCO} - 0.5}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}}}\end{vmatrix} \ge t_{\alpha/2}$ rechazamos $\mathbf{H}_0: b_2=0.5$, y aceptamos $\mathbf{H}_1: b_2 \neq 0.5$
+\newline\newline
+Ahora bien, dado que el nivel de significancia buscado es tal que $\alpha=5\%$, el valor crítico $t_{\alpha/2}$ pretendido es:
+```{r}
+alpha <- 0.05
+t_q <- qt(p = alpha/2, df = n-k, lower.tail = F)
+```
+Es decir, $t_{\alpha/2} = `r t_q`$
+
+Para $\hat{b}_{2MCO} = ((X'X)^{-1}X'Y)_2$
+```{r}
+b_2_mco <- b_mco[2]
+```
+Entonces:
+$$
+\begin{aligned}
+\hat{b}_{2MCO} &= `r b_2_mco` \\
+\hat{\sigma}_{uMCO} &= `r sd.u_mco` \\
+\sqrt{(X'X)^{-1}_{22}} &= `r sqrt(XX_inv)[2,2]`
+\end{aligned}
+$$
+Por lo tanto:
+$$
+\begin{vmatrix} \dfrac{\hat{b}_{2MCO} - 0.5}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{22}^{-1}}}\end{vmatrix} = \begin{vmatrix} \dfrac{`r b_2_mco` - 0.5}{`r sd.u_mco` * `r sqrt(XX_inv)[2,2]`}\end{vmatrix} = |`r (b_2_mco-0.5)/(sd.u_mco*sqrt(XX_inv)[2,2])`| < `r t_q`
+$$
+Es decir, dado que $|`r (b_2_mco-0.5)/(sd.u_mco*sqrt(XX_inv)[2,2])`| < `r t_q`$, aceptamos $\mathbf{H}_0: b_2=0.5$.
+
+### iv) Probar la hipótesis $$\mathbf{H}_0: b_3=1.2$$ contra la alternativa $$\mathbf{H}_1: b_3 \neq 1.2$$ con un nivel de significancia del 10%.
+
+Al igual que en los incisos anteriores, podemos utilizar el pivote: 
+$$\dfrac{\hat{b}_{3MCO} - b_3}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}} \sim t_{n-k}$$
+Lo anterior, al contener a $b_3$, no conocido aún, no es un estadístico. No obstante, bajo $\mathbf{H}_0$ sabemos que $b_3=1.2$, de modo que el pivote anterior se convierte en un estadístico dado que ya no contiene parámetros desconocidos:
+$$
+\dfrac{\hat{b}_{3MCO} - 1.2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}} \sim t_{n-k}
+$$
+Como vimos en clase, con esto podemos plantear una prueba de hipótesis en donde la regla de decisión es tal que:  
+Si $\mathbf{H}_0$ es cierta, entonces $\begin{vmatrix} \dfrac{\hat{b}_{3MCO} - 1.2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}}\end{vmatrix} < t_{\alpha/2}$. \newline\newline  
+En conclusión:
+\newline\newline
+Si $\begin{vmatrix} \dfrac{\hat{b}_{3MCO} - 1.2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}}\end{vmatrix} < t_{\alpha/2}$ aceptamos $\mathbf{H}_0: b_3=1.2$. 
+\newline\newline\newline
+Si $\begin{vmatrix} \dfrac{\hat{b}_{3MCO} - 1.2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}}\end{vmatrix} \ge t_{\alpha/2}$ rechazamos $\mathbf{H}_0: b_3=1.2$, y aceptamos $\mathbf{H}_1: b_3 \neq 1.2$
+\newline\newline
+Ahora bien, dado que el nivel de significancia buscado es tal que $\alpha=10\%$, el valor crítico $t_{\alpha/2}$ pretendido es:
+```{r}
+alpha <- 0.1
+t_q <- qt(p = alpha/2, df = n-k, lower.tail = F)
+```
+Es decir, $t_{\alpha/2} = `r t_q`$
+
+Para $\hat{b}_{3MCO} = ((X'X)^{-1}X'Y)_3$
+```{r}
+b_3_mco <- b_mco[3]
+```
+Entonces:
+$$
+\begin{aligned}
+\hat{b}_{3MCO} &= `r b_3_mco` \\
+\hat{\sigma}_{uMCO} &= `r sd.u_mco` \\
+\sqrt{(X'X)^{-1}_{33}} &= `r sqrt(XX_inv)[3,3]`
+\end{aligned}
+$$
+Por lo tanto:
+$$
+\begin{vmatrix} \dfrac{\hat{b}_{3MCO} - 1.2}{\hat{\sigma}_{uMCO} \sqrt{(X'X)_{33}^{-1}}}\end{vmatrix} = \begin{vmatrix} \dfrac{`r b_3_mco` - 1.2}{`r sd.u_mco` * `r sqrt(XX_inv)[3,3]`}\end{vmatrix} = |`r (b_3_mco-1.2)/(sd.u_mco*sqrt(XX_inv)[3,3])`| > `r t_q`
+$$
+Es decir, dado que $|`r (b_3_mco-1.2)/(sd.u_mco*sqrt(XX_inv)[3,3])`| > `r t_q`$, rechazamos $\mathbf{H}_0: b_3=1.2$ y aceptamos $\mathbf{H}_1: b_3 \neq 1.2$.
+
+### v) Probar la hipótesis $$\mathbf{H}_0: b_1 + b_3=1$$ contra la alternativa $$\mathbf{H}_1: b_1 + b_3 \neq 1$$ con un nivel de significancia del 10%.
+
+Reescribiendo la hipótesis, tenemos que:
+$$
+\mathbf{H}_0: \mathbf{c'}\mathbf{b} = \begin{pmatrix} 1&0&1 \end{pmatrix} \begin{pmatrix} b_1 \\ b_2 \\ b_3 \end{pmatrix} = 1
+$$
+Versus:
+$$
+\mathbf{H}_0: \mathbf{c'}\mathbf{b} = \begin{pmatrix} 1&0&1 \end{pmatrix} \begin{pmatrix} b_1 \\ b_2 \\ b_3 \end{pmatrix} \neq 1
+$$
+Como vimos en clase, podemos utilizar el pivote: 
+$$\dfrac{\mathbf{c'\hat{b}}_{MCO} - \mathbf{c'b}}{\hat{\sigma}_{uMCO} \sqrt{\mathbf{c'(X'X)^{-1}c}}} \sim t_{n-k}$$
+Lo anterior, al contener a $\mathbf{c'b}$, no conocido aún, no es un estadístico. No obstante, bajo $\mathbf{H}_0$ sabemos que $\mathbf{c'b}=1$, de modo que el pivote anterior se convierte en un estadístico dado que ya no contiene parámetros desconocidos:
+$$
+\dfrac{\mathbf{c'\hat{b}}_{MCO} - 1}{\hat{\sigma}_{uMCO} \sqrt{\mathbf{c'(X'X)^{-1}c}}} \sim t_{n-k}
+$$
+Como vimos en clase, con esto podemos plantear una prueba de hipótesis en donde la regla de decisión es tal que:  
+Si $\mathbf{H}_0$ es cierta, entonces $\begin{vmatrix} \dfrac{\mathbf{c'\hat{b}}_{MCO} - 1}{\hat{\sigma}_{uMCO} \sqrt{\mathbf{c'(X'X)^{-1}c}}}\end{vmatrix} < t_{\alpha/2}$. \newline\newline  
+En conclusión:
+\newline\newline
+Si $\begin{vmatrix} \dfrac{\mathbf{c'\hat{b}}_{MCO} - 1}{\hat{\sigma}_{uMCO} \sqrt{\mathbf{c'(X'X)^{-1}c}}}\end{vmatrix} < t_{\alpha/2}$ aceptamos $\mathbf{H}_0: \mathbf{c'b}=1$. 
+\newline\newline\newline
+Si $\begin{vmatrix} \dfrac{\mathbf{c'\hat{b}}_{MCO} - 1}{\hat{\sigma}_{uMCO} \sqrt{\mathbf{c'(X'X)^{-1}c}}}\end{vmatrix} \ge t_{\alpha/2}$ rechazamos $\mathbf{H}_0: \mathbf{c'b}=1$, y aceptamos $\mathbf{H}_1: \mathbf{c'b} \neq 1$
+\newline\newline
+Ahora bien, dado que el nivel de significancia buscado es tal que $\alpha=10\%$, el valor crítico $t_{\alpha/2}$ pretendido es:
+```{r}
+c <- matrix(c(1,0,1))
+alpha <- 0.1
+t_q <- qt(p = alpha/2, df = n-k, lower.tail = F)
+```
+Es decir, $t_{\alpha/2} = `r t_q`$
+
+De los incisos anteriores, sabemos que tenemos todos los elementos necesarios:
+$$
+\begin{aligned}
+\mathbf{\hat{b}}_{MCO} &= \begin{pmatrix} b_1 \\ b_2\\ b_3 \end{pmatrix} =\begin{pmatrix} `r b_mco[1]` \\ `r b_mco[2]`\\ `r b_mco[3]` \end{pmatrix} \\ \\
+\implies \mathbf{c'\hat{b}}_{MCO} &= \begin{pmatrix} 1&0&1 \end{pmatrix}\begin{pmatrix} `r b_mco[1]` \\ `r b_mco[2]`\\ `r b_mco[3]` \end{pmatrix} = `r t(c)%*%b_mco` \\ \\
+\hat{\sigma}_{uMCO} &= `r sd.u_mco` \\
+\sqrt{\mathbf{c'(X'X)^{-1}c}} &= `r sqrt(t(c)%*%XX_inv%*%c)`
+\end{aligned}
+$$
+Por lo tanto:
+$$
+\begin{vmatrix} \dfrac{\mathbf{c'\hat{b}}_{MCO} - 1}{\hat{\sigma}_{uMCO} \sqrt{\mathbf{c'(X'X)^{-1}c}}}\end{vmatrix} = \begin{vmatrix} \dfrac{`r t(c)%*%b_mco` - 1}{`r sd.u_mco` * `r t(c)%*%XX_inv%*%c`}\end{vmatrix} = |`r (t(c)%*%b_mco-1)/(sd.u_mco*sqrt(t(c)%*%XX_inv%*%c))`| < `r t_q`
+$$
+Es decir, dado que $|`r (t(c)%*%b_mco-1)/(sd.u_mco*sqrt(t(c)%*%XX_inv%*%c))`| < `r t_q`$, aceptamos $\mathbf{H}_0: \mathbf{c'b} = b_1 + b_3 = 1$ (y rechazamos $\mathbf{H}_1: \mathbf{c'b} = b_1 + b_3 \neq 1$).

@@ -1,0 +1,304 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath", "setspace", "amssymb", "mathtools"]
+    dev: cairo_pdf
+    latex_engine: xelatex
+mainfont: "Courier"
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+```
+
+### ii) Generar una muestra $\begin{Bmatrix}\begin{pmatrix} U_t \\ I_t \end{pmatrix}\end{Bmatrix}_{t=1}^{200}$ de vectores aleatorios i.i.d., donde \newline \newline $U_t \sim N(0,0.2)$, $I_t \sim UNIF(0,1)$, tales que $cov(I_t,U_t)=0$ $\forall t \in\{1, 2, \dots, 200\}$
+```{r}
+set.seed(1)
+n <- 200
+U <- rnorm(n, 0, sd = sqrt(0.2))
+I <- runif(n, 0, 1)
+round(cov(I,U), 2)
+```
+
+---
+
+### iii) Sean $\alpha = 1.2$ y $\beta = 0.8$. Usando las muestras obtenidas en i) generar la muestra \newline \newline correspondiente $\begin{Bmatrix}\begin{pmatrix} C_t \\ Y_t \end{pmatrix}\end{Bmatrix}_{t=1}^{200}$
+
+Primero notemos que como
+$$
+\begin{aligned}
+  C_t &= \alpha + \beta Y_t + U_t \\
+  Y_t &= C_t + I_t
+\end{aligned}
+$$
+Tenemos que
+$$
+\begin{aligned}
+  Y_t &= \alpha + \beta Y_t + U_t + I_t \\
+  \implies Y_t &= {1 \over 1-\beta} (\alpha + U_t + I_t)
+  \end{aligned}
+$$
+Construyamos entonces los vectores aleatorios:
+```{r}
+alpha <- 1.2
+beta <- 0.8
+
+Y <- 1/(1-beta) * (alpha + U + I)
+C <- alpha + beta*Y + U
+```
+
+---
+
+
+### iv) Usando los datos generados en ii) estimar por el método de momentos los parámetros $\alpha$ y $\beta$ de la ecuación $$C_t = \alpha + \beta Y_t + U_t, \ \ \ \ t=1,2,\dots,200$$
+
+En i) calculamos los estimadores del método de momentos. Por lo tanto:
+```{r}
+(beta_MoM <- mean((I - mean(I)) * (C - mean(C))) / mean((I - mean(I)) * (Y - mean(Y))))
+(alpha_MoM <- mean(C) - beta_MoM * mean(Y))
+```
+Es decir,
+$$
+\begin{pmatrix}
+  \hat{\alpha}_{MM} \\
+  \hat{\beta}_{MM}
+\end{pmatrix}
+=
+\begin{pmatrix}
+  `r alpha_MoM` \\
+  `r beta_MoM`
+\end{pmatrix}
+$$
+Lo anterior coincide con los estimadores vistos en clase, puesto que, aunque se calcularon de forma matricial, los estimadores tienen la misma fórmula:
+```{r}
+Z <- matrix(c(rep(1,n), I), ncol = 2)
+X <- matrix(c(rep(1,n), Y), ncol = 2)
+solve(t(Z)%*%X)%*%(t(Z)%*%C)
+```
+
+---
+
+
+### v) Dar un intervalo de confianza de $\beta$ con 90% de nivel de confianza.
+Primero necesitamos un pivote para $\beta$. En clase vimos que
+$$
+\sqrt{n}\begin{pmatrix}
+  \begin{pmatrix}
+    \hat{\alpha}_{MM} \\
+    \hat{\beta}_{MM}
+  \end{pmatrix}
+  -
+  \begin{pmatrix}
+    \alpha \\
+    \beta
+  \end{pmatrix}
+\end{pmatrix}
+\xrightarrow{\enskip D\enskip} N_2(0,V)
+$$
+donde
+$$
+V=G_0^{-1}S_0(G_0^{-1})' \ \ \ \text{ , } \ \ \ \hat{V}_T=\hat{G_0}^{-1}\hat{S_0}(\hat{G_0}^{-1})'
+$$
+y
+$$
+\hat{G_0}=
+\begin{pmatrix}
+  -1 & -{1 \over T}\sum_{t=1}^T Y_t \\
+  -{1 \over T}\sum_{t=1}^T I_t & -{1 \over T}\sum_{t=1}^T Y_t I_t
+\end{pmatrix}, \ \ \
+\hat{S_0}=
+\begin{pmatrix}
+  \hat{\sigma}_u^2 & -{1 \over T}\sum_{t=1}^T I_t \hat{U}_t^2 \\
+  -{1 \over T}\sum_{t=1}^T I_t \hat{U}_t^2 & -{1 \over T}\sum_{t=1}^T I_t^2 \hat{U}_t^2
+\end{pmatrix},
+$$
+Haciendo $\mathbf{R}=\begin{pmatrix} 0 & 1 \end{pmatrix}$, tenemos que
+$$
+\begin{aligned}
+&\sqrt{n} \ \mathbf{R}\begin{pmatrix}
+  \begin{pmatrix}
+    \hat{\alpha}_{MM} \\
+    \hat{\beta}_{MM}
+  \end{pmatrix}
+  -
+  \begin{pmatrix}
+    \alpha \\
+    \beta
+  \end{pmatrix}
+\end{pmatrix}
+\xrightarrow{\enskip D\enskip} N(0,\mathbf{R}V\mathbf{R}') \\
+&\iff
+\sqrt{n}\begin{pmatrix}
+  \mathbf{R}\begin{pmatrix}
+    \hat{\alpha}_{MM} \\
+    \hat{\beta}_{MM}
+  \end{pmatrix}
+  -
+  \mathbf{R}\begin{pmatrix}
+    \alpha \\
+    \beta
+  \end{pmatrix}
+\end{pmatrix}
+\xrightarrow{\enskip D\enskip} N(0,\mathbf{R}V\mathbf{R}') \\
+&\iff
+\sqrt{n}\begin{pmatrix}
+  \hat{\beta}_{MM}
+  -
+  \beta
+\end{pmatrix}
+\xrightarrow{\enskip D\enskip} N(0,\mathbf{R}V\mathbf{R}')
+\end{aligned}
+$$
+Por tanto
+$$
+\sqrt{n}(\mathbf{R}\hat{V}_T\mathbf{R}')^{-1/2}(\hat{\beta}_{MM}-\beta)
+\xrightarrow{\enskip D\enskip} N(0,1)
+$$
+Con este pivote podemos construir el intervalo de confianza:
+$$
+\begin{aligned}
+  &\mathbb{P}\Bigg[
+    q_1 < 
+      \sqrt{n}(\mathbf{R}\hat{V}_T\mathbf{R}')^{-1/2}(\hat{\beta}_{MM}-\beta)
+    < q_2
+  \Bigg] = 0.90 \\
+  &\iff
+  \mathbb{P}\Bigg[
+    q_1 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}} < 
+      \hat{\beta}_{MM} - \beta
+    < q_2 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}}
+  \Bigg] = 0.90 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    - \hat{\beta}_{MM} + q_1 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}} < 
+      - \beta
+    < - \hat{\beta}_{MM} + q_2 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}}
+  \Bigg] = 0.90 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    \hat{\beta}_{MM} - q_1 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}} > 
+      \beta
+    > \hat{\beta}_{MM} - q_2 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}}
+  \Bigg] = 0.90 \\
+    &\iff
+  \mathbb{P}\Bigg[
+    \hat{\beta}_{MM} - q_2 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}} < 
+      \beta
+    < \hat{\beta}_{MM} - q_1 \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}}
+  \Bigg] = 0.90
+\end{aligned}
+$$
+El intervalo de confianza para $\beta$ es entonces:
+$$
+IC_{\beta} 
+= \Bigg(
+  \hat{\beta}_{MM} - q_{95\%}^{N(0,1)} \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}} \ , \
+  \hat{\beta}_{MM} - q_{5\%}^{N(0,1)} \sqrt{\dfrac{\mathbf{R}\hat{V}_T\mathbf{R}'}{n}}
+\Bigg)
+$$
+Construyamos todo lo necesario para computar el intervalo, comenzando por $\mathbf{R}\hat{V}_T\mathbf{R}'$
+```{r}
+Uhat <- C - alpha_MoM - beta_MoM*Y
+R <- matrix(c(0,1), ncol = 2)
+Ghat <- matrix(c(-1, -mean(Y),
+                 -mean(I), -mean(Y*I)),
+               ncol = 2,
+               byrow = T)
+Shat <- matrix(c(var(Uhat), -mean(I*Uhat^2),
+                 -mean(I*Uhat^2), -mean(I^2 * Uhat^2)),
+               ncol = 2,
+               byrow = T)
+Vhat <- solve(Ghat)%*%Shat%*%t(solve(Ghat))
+```
+Ahora tomemos los cuantiles de la normal estándar y calculemos el intervalo:
+```{r}
+significancia <- 0.1
+q1 <- qnorm(significancia/2) # cuantil 5%
+q2 <- qnorm(1 - significancia/2) # cuantil 95%
+
+IC <- c(
+  beta_MoM - q2 * sqrt(R%*%Vhat%*%t(R) / n),
+  beta_MoM - q1 * sqrt(R%*%Vhat%*%t(R) / n)
+)
+IC
+```
+Es decir, el intervalo de confianza de $\beta$ al 90% de confianza es:
+$$
+IC_{\beta} 
+= \Bigg(
+  `r IC[1]` \ , \
+  `r IC[2]`
+\Bigg)
+$$
+El cual contiene al valor verdadero de $\beta$.
+
+---
+
+
+### vi) Probar la hipótesis $$ \begin{aligned} &\mathbf{H_0}: \beta = 0.9 \ \ \ \text{vs} \\ &\mathbf{H_1}: \beta \neq 0.9 \end{aligned} $$ con nivel de significancia del 10%
+
+El pivote usado en el inciso anterior se convierte, bajo $H_0$, en el estadístico siguiente:
+$$
+Q=\sqrt{n}(\mathbf{R}\hat{V}_T\mathbf{R}')^{-1/2}(\hat{\beta}_{MM}-0.9)
+\xrightarrow{\enskip D\enskip} N(0,1)
+$$
+Alternativamente, podemos usar el estadístico de Wald:
+$$
+W_n=n(\mathbf{R}\hat{V}_T\mathbf{R}')^{-1}(\hat{\beta}_{MM}-0.9)^2
+\xrightarrow{\enskip D\enskip} \chi_1^2
+$$
+Los resultados cualitativos serían los mismos. Calculemos ambos:
+```{r}
+(Q <- sqrt(n/R%*%Vhat%*%t(R))*(beta_MoM - 0.9))
+(W_n <- n/R%*%Vhat%*%t(R)*(beta_MoM - 0.9)^2)
+```
+Los valores críticos serían
+```{r}
+(q <- qnorm(significancia)) # para comparar contra Q
+(w <- qchisq(significancia, df = 1, lower.tail = F)) # para comparar contra W_n
+```
+Es decir,
+$$
+\begin{aligned}
+|Q| &= `r abs(Q)` > `r abs(q)` = |q| \\
+W_n &= `r W_n` > `r w` = w
+\end{aligned}
+$$
+Por lo que rechazamos la hipótesis nula.
+
+---
+
+
+### vi) Probar la hipótesis $$ \begin{aligned} &\mathbf{H_0}: \alpha + \beta = 1.8 \ \ \ \text{vs} \\ &\mathbf{H_1}: \alpha + \beta \neq 1.8 \end{aligned} $$ con nivel de significancia del 5%
+
+Afortunadamente, la única diferencia con el inciso anterior es que, en este ejemplo, $\tilde{R} = \begin{pmatrix} 1 & 1 \end{pmatrix}$. Por tanto, haciendo este ligero ajuste obtenemos:
+```{r}
+Rtilde <- matrix(c(1,1), ncol = 2)
+(Q <- sqrt(n/Rtilde%*%Vhat%*%t(Rtilde))*(beta_MoM + alpha_MoM - 1.8))
+(W_n <- n/Rtilde%*%Vhat%*%t(Rtilde)*(beta_MoM + alpha_MoM - 1.8)^2)
+```
+Los valores críticos serían
+```{r}
+significancia <- 0.05
+(q <- qnorm(significancia)) # para comparar contra Q
+(w <- qchisq(significancia, df = 1, lower.tail = F)) # para comparar contra W_n
+```
+En este caso, los estadísticos son menores a los valores críticos (en absoluto para el caso de Q), por lo que aceptamos la hipótesis nula. Esto se debe a la gran varianza del estimador de $\alpha$, lo que ocasiona que de hecho 1.8 esté dentro de un intervalo de confianza de $\alpha + \beta$.
+```{r, include=FALSE}
+q1 <- qnorm(significancia/2) # cuantil 5%
+q2 <- qnorm(1 - significancia/2) # cuantil 95%
+c(
+  alpha_MoM + beta_MoM - q2 * sqrt(Rtilde%*%Vhat%*%t(Rtilde) / n),
+  alpha_MoM + beta_MoM - q1 * sqrt(Rtilde%*%Vhat%*%t(Rtilde) / n)
+)
+```
+

@@ -1,0 +1,122 @@
+---
+title: ""
+output: 
+  pdf_document:
+    extra_dependencies: ["mathtools", "amsmath", "setspace", "amssymb"]
+    dev: cairo_pdf
+    latex_engine: xelatex
+mainfont: "Courier"
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+rm(list = ls())
+library(stargazer)
+library(dplyr)
+library(memisc)
+library(pander)
+```
+
+## 2. Funciones no lineales de parámetros. El Método Delta. \newline Usando la serie "The U.S. Gasoline Market, 52 Yearly Observations, 1953-2004" en la base de datos de *Econometric Analysis, 7th edition*, de W. H. Greene, en , reproducir los resultados numéricos dados en el *Example 4.4 Nonlinear Functions of Parameters: The Delta Method*, pág.69.
+\rule{\textwidth}{1pt}
+
+A dynamic version of the demand for gasoline model in Example 2.3 would be used to
+separate the short- and long-term impacts of changes in income and prices. The model
+would be
+
+En el ejemplo se habla acerca de un modelo dinámico de demanda de gasolina para separar los efectos de corto y largo plazo que inflingen los cambios en ingreso y precios. El modelo sería el siguiente:
+$$
+\ln(G/Pop)_t = \beta_1 + \beta_2 \ln P_{G,t} + \beta_3 \ln(Income/Pop)_t + \beta_4 \ln P_{nc,t} + \beta_5 \ln P_{uc,t} + \gamma \ln(G/Pop)_{t-1} + \varepsilon_t
+$$
+Es posible estimar los parámetros de este modelo mediante MCO. El siguiente código replica los resultados hallados por Greene
+```{r, results='asis'}
+url <- "http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF2-2.csv"
+
+gasoline <- read.csv(url)
+
+fm <- log((GASEXP/GASP)/POP) ~ log(GASP) + log(INCOME) + 
+  log(PNC) + log(PUC) + log(lag((GASEXP/GASP)/POP))
+m <- lm(fm, data = gasoline)
+coeficientes <- coefficients(m)
+gamma <- coeficientes[6]
+
+print(xtable::xtable(summary(m), digits = 6), comment = FALSE)
+
+
+```
+En este modelo, las elasticidades precio e ingreso de corto plazo son $\beta_2$ y $\beta_3$, respectivamente, mientras que las de largo plazo son $\Phi_2 = \dfrac{\beta_2}{1-\gamma}$ y $\Phi_3 = \dfrac{\beta_3}{1-\gamma}$, en el mismo orden. Podemos computar dichos valores de largo plazo:
+$$
+\begin{aligned}
+\hat{\Phi_2}_{MCO} &= \dfrac{\hat{\beta_2}_{MCO}}{1-\hat{\gamma}_{MCO}}=\dfrac{`r coeficientes[2]`}{1 - `r gamma`} = `r coeficientes[2]/(1-gamma)` \\
+\hat{\Phi_3}_{MCO} &= \dfrac{\hat{\beta_3}_{MCO}}{1-\hat{\gamma}_{MCO}}=\dfrac{`r coeficientes[3]`}{1 - `r gamma`} = `r coeficientes[3]/(1-gamma)`
+\end{aligned}
+$$
+Asimismo, también podemos calcular los errores estándar de dichos estimadores de largo plazo. Para ello, podemos utilizar el método delta, que nos permite conocer la distribución asintótica de cualquier función continua de una sucesión de estimadores. Notemos por ahora que los estimadores de largo plazo son una función continua $g: \mathbb{R}^6 \rightarrow \mathbb{R}^2$ tal que:
+$$
+g(b) = 
+\begin{pmatrix}
+  \frac{\beta_2}{1-\gamma} \\
+  \frac{\beta_3}{1-\gamma}
+\end{pmatrix}, \text{ donde }\ b = \begin{pmatrix}
+  \beta_1 \\
+  \beta_2 \\
+  \beta_3 \\
+  \beta_4 \\
+  \beta_5 \\
+  \gamma
+\end{pmatrix} 
+$$
+Además, 
+$$
+\frac{\partial{g(b)}}{\partial{b}} = 
+\begin{pmatrix}
+  0 & \frac{1}{1-\gamma} & 0 & 0 & 0 & \frac{\beta_2}{(1-\gamma)^2} \\
+  0 & 0 & \frac{1}{1-\gamma} & 0 & 0 & \frac{\beta_3}{(1-\gamma)^2}
+\end{pmatrix} 
+$$
+Para aplicar el método delta, conviene recordar que si tenemos:
+$$
+\sqrt{n}(\hat{b}_{MCO} - b) \xrightarrow{\enskip D\enskip} \mathcal{N}_6(0,V) \text{,      con }\ V=\sigma_u^2(\dfrac{1}{n}\mathbb{E}[X'X])^{-1} \ \text{ (bajo homocedasticidad)} 
+$$
+Entonces, por el método delta:
+$$
+\begin{aligned}
+\sqrt{n}\Big((g(\hat{b}_{MCO}) - g(b)\Big) &\xrightarrow{\enskip D\enskip} \mathcal{N}_2\Biggl(0,\frac{\partial{g(b)}}{\partial{b}}V\biggl(\frac{\partial{g(b)}}{\partial{b}}\biggl)'\Biggl) \\
+\iff g(\hat{b}_{MCO}) &\xrightarrow{\enskip D\enskip} \mathcal{N}_2\Biggl(g(b),\frac{1}{n}\frac{\partial{g(b)}}{\partial{b}}\sigma_u^2(\dfrac{1}{n}\mathbb{E}[X'X])^{-1}\biggl(\frac{\partial{g(b)}}{\partial{b}}\biggl)'\Biggl) \\
+\iff g(\hat{b}_{MCO}) &\xrightarrow{\enskip D\enskip} \mathcal{N}_2\Biggl(g(b),\frac{\partial{g(b)}}{\partial{b}}\sigma_u^2(\mathbb{E}[X'X])^{-1}\biggl(\frac{\partial{g(b)}}{\partial{b}}\biggl)'\Biggl) \\
+\iff g(\hat{b}_{MCO}) &\xrightarrow{\enskip D\enskip} \mathcal{N}_2\Big(g(b),V_g\Big), \text{ con }\ V_g =\frac{\partial{g(b)}}{\partial{b}}\sigma_u^2(\mathbb{E}[X'X])^{-1}\biggl(\frac{\partial{g(b)}}{\partial{b}}\biggl)'
+\end{aligned}
+$$
+Podemos proponer un estimador consistente de $V_g$ para estimar los errores estándar. Éste sería
+$$
+\hat{V}_{g_n} = \frac{\partial{g(\hat{b}_{MCO})}}{\partial{\hat{b}_{MCO}}}\hat{\sigma}_{u_{MCO}}^2(X'X)^{-1}\biggl(\frac{\partial{g(\hat{b}_{MCO})}}{\partial{\hat{b}_{MCO}}}\biggl)'
+$$
+Dado que conocemos todos los elementos, podemos computar esa matriz de dimensiónes 2x2 con el siguiente código:
+```{r}
+g2diff <- c(0, 1/(1-gamma), 0, 0, 0, coeficientes[2]/(1-gamma)^2)
+g3diff <- c(0, 0, 1/(1-gamma), 0, 0, coeficientes[3]/(1-gamma)^2)
+gdiff <- as.matrix(rbind(g2diff, g3diff))
+
+
+sigma_u <- summary(m)$sigma
+X <- as.matrix(cbind(1, m$model[,-1]))
+n <- nrow(X)
+
+V_gn <- sigma_u^2*gdiff%*%solve(t(X)%*%X)%*%t(gdiff)
+V_gn
+```
+Si tomamos la raíz cuadrada, obtenemos los errores estándar
+```{r, warning=FALSE}
+delta_std_errors <- sqrt(V_gn)
+delta_std_errors
+```
+Los cuales son idénticos a los obtenidos por Greene. Con ello, hemos calculado los estimadores de largo plazo de las elasticidades precio e ingreso de la demanda de gasolina, así como sus errores estándar, lo que nos permitiría calcular intervalos de confianza para dichos valores de LP. Es importante mencionar que todo lo anterior se hizo asumiendo homocedasticidad, aunque es posible construir los valores bajo heterocedasticidad. También requerimos que el tamaño de la muestra sea grande; en nuestro caso, la muestra es de `r n` observaciones.
+
+
+
